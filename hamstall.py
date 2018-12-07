@@ -20,14 +20,14 @@ def Install(program):
     print("Creating new temp directory")
     os.system("mkdir ~/.hamstall/temp") #Creates temp directory for extracting tar
     print("Extracting tar to temp directory")
-    command_to_go = "tar xvzf " + program + " -C ~/.hamstall/temp/" 
+    command_to_go = "tar xvzf " + program + " -C ~/.hamstall/temp/"
     os.system(command_to_go) #Extracts program tar
     print("Moving program to directory")
     program_internal_name = GetInternalName(program)
 ##    print(program_internal_name)
     os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
     os.system("mv ~/.hamstall/temp/" + program_internal_name + " ~/.hamstall/bin/" ) #Moves program files
-    print("Adding program to hamstall list of programs") 
+    print("Adding program to hamstall list of programs")
     os.system('echo "rm -rf ~/.hamstall/bin/' + program_internal_name + '" > ~/.hamstall/uninstall_scripts/' + program_internal_name + '.sh') #Creates uninstall script
     os.system('chmod +x ~/.hamstall/uninstall_scripts/' + program_internal_name + '.sh') #adds line to uninstall script to remove it
     #Figure out path stuff
@@ -43,6 +43,11 @@ def Uninstall(program):
 def ListPrograms():
     os.system("ls ~/.hamstall/uninstall_scripts")
     #Will put a better thing in here at some point
+def FirstTimeSetup():
+    os.system("mkdir ~/.hamstall")
+    os.system("mkdir ~/.hamstall/temp")
+    os.system("mkdir ~/.hamstall/bin")
+    os.system("mkdir ~/.hamstall/uninstall_scripts")
 
 def get_input(question, options, default): #Like input but with some checking
     answer = "-1" #Set answer to something
@@ -58,6 +63,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-install", help="Install a .tar.gz")
 parser.add_argument("-uninstall", help="Uninstall an insatlled program")
 parser.add_argument("-list", help="List installed programs")
+parser.add_argument("-first", help="Run first time setup")
 args = parser.parse_args() #Parser stuff
 if args.install != None:
     to_install = args.install #to_install from the argument
@@ -76,7 +82,7 @@ if args.install != None:
             print("Reinstall cancelled.")
     else:
         Install(to_install) #No reinstall needed to be asked, install program
-        
+
 elif args.uninstall != None:
     to_uninstall = args.uninstall
     file_check = os.path.isfile(os.path.expanduser("~/.hamstall/uninstall_scripts/" + to_uninstall + ".sh")) #Checks to see if the file path for the program's uninstall script exists
@@ -86,3 +92,6 @@ elif args.uninstall != None:
         print("Program does not exist!") #Program doesn't exist
 elif args.list != None:
     ListPrograms() #List programs installed
+
+elif args.first != None:
+    FirstTimeSetup()

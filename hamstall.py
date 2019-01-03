@@ -119,14 +119,16 @@ class hamstall:
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-install", help="Install a .tar.gz or .tar.xz")
-parser.add_argument("-uninstall", help="Uninstall an insatlled program")
-parser.add_argument("-list", help="List installed programs")
-parser.add_argument("-first", help="Run first time setup")
-parser.add_argument("-erase", help="Delete hamstall from your system")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-i', "--install", help="Install a .tar.gz or .tar.xz")
+group.add_argument('-u', "--uninstall", help="Uninstall an insatlled program")
+group.add_argument('-l', "--list", help="List installed programs", action="store_true")
+group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
+group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
 args = parser.parse_args() #Parser stuff
 if args.install != None:
     to_install = args.install #to_install from the argument
+    print(to_install)
     does_tar_exist = file.exists(to_install)
     if does_tar_exist == False:
         print("File to install does not exist!")
@@ -151,13 +153,13 @@ elif args.uninstall != None:
     else:
         print("Program does not exist!") #Program doesn't exist
 
-elif args.list != None:
+elif args.list:
     hamstall.listPrograms() #List programs installed
 
-elif args.first != None:
+elif args.first:
     hamstall.firstTimeSetup() #First time setup
 
-elif args.erase != None:
+elif args.erase:
     erase_sure = get_input("Are you sure you would like to remove hamstall from your system? [y/N]", ['y', 'n'], 'n')
     if erase_sure == 'y':
         erase_really_sure = get_input('Are you absolutely sure? This will remove all programs installed with hamstall! [y/N]', ['y', 'n'], 'n')

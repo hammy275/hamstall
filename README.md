@@ -6,7 +6,7 @@ At the moment, this program only supports the installing and uninstalling of .ta
 Not much sanity checking takes place and this is very much in "beta" (even though this really shouldn't be used anyways)
 
 ## Installation
-Download this repo, then run hamstall.py with Python3! You will need to run -first when you run it for the first time to prepare your system.
+Download this repo, then run hamstall.py with Python3! Use ```python3 hamstall.py --first``` to run first time setup.
 
 ## Important info
-This will be updated, and until I mention otherwise on this page, there will be no backwards compatability. Stuff will break between some updates.
+This will be updated, and until I mention otherwise on this page, there will be no backwards compatability. Stuff will break between some updates!

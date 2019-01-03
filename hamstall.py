@@ -33,6 +33,8 @@ class file:
     def exists(file_name):
         return os.path.isfile(os.path.expanduser(file_name)) #Returns True if the given file exists. Otherwise false.
 
+    def full(file_name):
+        return os.path.expanduser(file_name)
 
 
 class hamstall:
@@ -41,7 +43,7 @@ class hamstall:
         print("Hamstall has been removed from your system.")
         print('If you would like to use hamstall again, please use the Python file.')
         print('Otherwise, you may remove this python script from your system.')
-        x=input('')
+        x=input('Press return to exit...')
 
     def firstTimeSetup():
         print("Creating directories")
@@ -66,11 +68,17 @@ class hamstall:
         os.system(command_to_go) #Extracts program tar
         print("Moving program to directory")
         os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
-        os.system("mv ~/.hamstall/temp/" + program_internal_name + " ~/.hamstall/bin/" ) #Moves program files
+        os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
         print("Adding program to hamstall list of programs")
         os.system('echo "rm -rf ~/.hamstall/bin/' + program_internal_name + '" > ~/.hamstall/uninstall_scripts/' + program_internal_name) #Creates uninstall script
         os.system('chmod +x ~/.hamstall/uninstall_scripts/' + program_internal_name) #adds line to uninstall script to remove it
-        #Here is where I should add stuff to PATH.
+        ###PATH CODE###
+        print('Adding program to PATH')
+        file_path = file.full("~/.bashrc")
+        line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + '\n'
+        with open(file_path, 'a') as bashrc:
+            bashrc.write(line_to_write)
+        ###/PATH CODE###
         print("Install Completed!")
 
     def uninstall(program):
@@ -78,6 +86,26 @@ class hamstall:
         os.system("~/.hamstall/uninstall_scripts/" + program) #Runs uninstall script
         print("Removing uninstall script")
         os.system("rm -rf ~/.hamstall/uninstall_scripts/" + program) #Removes uninstall script
+        ###PATH REMOVAL###
+        print('Removing program from PATH through bashrc; please do not close this window or your .bashrc file may become corrupt!')
+        to_be_removed = "export PATH=$PATH:~/.hamstall/bin/" + program + '\n' #Line to be removed
+        file_path = file.full('~/.bashrc') #Set file path to bashrc
+        f = open(file_path, 'r') #Open bashrc
+        open_file = f.readlines() #Copy bashrc to program
+        f.close() #Close bashrc
+
+        rewrite = ''''''
+
+        for line in open_file:
+            if line == to_be_removed:
+                print('Line removed! Please wait until this process fully completes...')
+            else:
+                rewrite += line #Loop that removes line that needs removal from the copy of bashrc
+        written = open(file_path, 'w')
+        written.write(str(rewrite))
+        written.close() #Write then close our new bashrc
+        print('Removal from PATH complete!')
+        ###PATH REMOVAL###
         print("Uninstall complete!")
 
     def listPrograms():

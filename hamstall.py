@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 #Hamstall
-#Please don't use this in an actual environment. It doesn't have much sanity checking, and I update it a lot, breaking compatability with older versions.
+#Should be ready for an actual environment pretty soon. Will still be in beta so I have an excuse to make changes without worrying about backwards compatability though.
 
 import os
 import argparse
@@ -19,6 +19,13 @@ def get_input(question, options, default): #Like input but with some checking
     else:
         return answer #Return answer if it isn't the default answer
 
+def vprint(to_print): #Verbose print
+    f = open(file.full('~/.hamstall/verbose'), 'r')
+    open_file = f.readlines()
+    f.close()
+    if 'True' in open_file[0]: #If we're supposed to be verbose
+        print(to_print) #Print verbose message
+
 
 
 class file:
@@ -31,7 +38,7 @@ class file:
         return program[((len(program))-7):len(program)] #Returns the last 7 characters of the provided file name.
 
     def exists(file_name):
-        return os.path.isfile(os.path.expanduser(file_name)) #Returns True if the given file exists. Otherwise false.
+        return os.path.isfile(file.full(file_name)) #Returns True if the given file exists. Otherwise false.
 
     def full(file_name):
         return os.path.expanduser(file_name)
@@ -39,41 +46,45 @@ class file:
 
 class hamstall:
     def erase():
+        vprint('Removing PATH lines from bashrc')
+        for program in os.listdir(file.full('~/.hamstall/uninstall_scripts/')):
+            hamstall.removeFromPath(program) #Remove all programs from bashrc
         os.system('rm -rf ~/.hamstall')
         print("Hamstall has been removed from your system.")
         print('If you would like to use hamstall again, please use the Python file.')
         print('Otherwise, you may remove this python script from your system.')
-        x=input('Press return to exit...')
+        input('Press return to exit...')
 
     def firstTimeSetup():
-        print("Creating directories")
+        print('Installing hamstall to your system...')
         os.system("mkdir ~/.hamstall")
         os.system("mkdir ~/.hamstall/temp")
         os.system("mkdir ~/.hamstall/bin")
         os.system("mkdir ~/.hamstall/uninstall_scripts") #Create some directories
+        os.system("echo False >> ~/.hamstall/verbose")
         print('First time setup complete!')
 
     def install(program):
         program_internal_name = file.name(program)
-        print("Removing old temp directory (if it exists!)")
+        vprint("Removing old temp directory (if it exists!)")
         os.system("rm -rf ~/.hamstall/temp") #Removes temp directory (used during installs)
-        print("Creating new temp directory")
+        vprint("Creating new temp directory")
         os.system("mkdir ~/.hamstall/temp") #Creates temp directory for extracting tar
-        print("Extracting tar to temp directory")
+        vprint("Extracting tar to temp directory")
         file_extension = file.extension(program)
         if file_extension == '.tar.gz':
             command_to_go = "tar xf " + program + " -C ~/.hamstall/temp/"
         elif file_extension == '.tar.xz':
             command_to_go = "tar xf " + program + " -C ~/.hamstall/temp/"
         os.system(command_to_go) #Extracts program tar
-        print("Moving program to directory")
+        vprint("Moving program to directory")
         os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
         os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
-        print("Adding program to hamstall list of programs")
+        vprint("Adding program to hamstall list of programs")
         os.system('echo "rm -rf ~/.hamstall/bin/' + program_internal_name + '" > ~/.hamstall/uninstall_scripts/' + program_internal_name) #Creates uninstall script
-        os.system('chmod +x ~/.hamstall/uninstall_scripts/' + program_internal_name) #adds line to uninstall script to remove it
+        os.system('chmod +x ~/.hamstall/uninstall_scripts/' + program_internal_name) #Adds line to uninstall script to remove it
         ###PATH CODE###
-        print('Adding program to PATH')
+        vprint('Adding program to PATH')
         file_path = file.full("~/.bashrc")
         line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + '\n'
         with open(file_path, 'a') as bashrc:
@@ -82,12 +93,15 @@ class hamstall:
         print("Install Completed!")
 
     def uninstall(program):
-        print("Removing program files")
+        vprint("Removing program files")
         os.system("~/.hamstall/uninstall_scripts/" + program) #Runs uninstall script
-        print("Removing uninstall script")
+        vprint("Removing uninstall script")
         os.system("rm -rf ~/.hamstall/uninstall_scripts/" + program) #Removes uninstall script
-        ###PATH REMOVAL###
-        print('Removing program from PATH through bashrc; please do not close this window or your .bashrc file may become corrupt!')
+        hamstall.removeFromPath(program)
+        print("Uninstall complete!")
+
+    def removeFromPath(program):
+        vprint('Removing ' + program + ' from PATH through bashrc.')
         to_be_removed = "export PATH=$PATH:~/.hamstall/bin/" + program + '\n' #Line to be removed
         file_path = file.full('~/.bashrc') #Set file path to bashrc
         f = open(file_path, 'r') #Open bashrc
@@ -98,15 +112,14 @@ class hamstall:
 
         for line in open_file:
             if line == to_be_removed:
-                print('Line removed! Please wait until this process fully completes...')
+                vprint('Line removed!')
             else:
                 rewrite += line #Loop that removes line that needs removal from the copy of bashrc
         written = open(file_path, 'w')
         written.write(str(rewrite))
         written.close() #Write then close our new bashrc
-        print('Removal from PATH complete!')
-        ###PATH REMOVAL###
-        print("Uninstall complete!")
+        vprint('Removal from PATH complete!')
+        return
 
     def listPrograms():
         os.system("ls ~/.hamstall/uninstall_scripts")
@@ -114,8 +127,8 @@ class hamstall:
 
 
 
-
 ###############Argument Parsing Below###############
+
 
 
 parser = argparse.ArgumentParser()
@@ -125,10 +138,10 @@ group.add_argument('-u', "--uninstall", help="Uninstall an insatlled program")
 group.add_argument('-l', "--list", help="List installed programs", action="store_true")
 group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
 group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
+group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
 args = parser.parse_args() #Parser stuff
 if args.install != None:
     to_install = args.install #to_install from the argument
-    print(to_install)
     does_tar_exist = file.exists(to_install)
     if does_tar_exist == False:
         print("File to install does not exist!")
@@ -164,8 +177,23 @@ elif args.erase:
     if erase_sure == 'y':
         erase_really_sure = get_input('Are you absolutely sure? This will remove all programs installed with hamstall! [y/N]', ['y', 'n'], 'n')
         if erase_really_sure == 'y':
-            hamstall.erase() #Remove hamstall from your system
+            hamstall.erase() #Remove hamstall from the system
         else:
             print('Erase cancelled.')
     else:
         print('Erase cancelled.')
+
+elif args.verbose: #Verbose toggle
+    f = open(file.full('~/.hamstall/verbose'), 'r')
+    open_file = f.readlines()
+    f.close() #Open file and read contents
+    os.system('rm -rf ~/.hamstall/verbose') #Remvoe old verbose file
+    if 'False' in open_file[0]:
+        to_put = 'True'
+    else:
+        to_put = 'False' #Toggle
+    os.system('echo ' + to_put + ' >> ~/.hamstall/verbose') #Change verbose mode
+    print('Verbose mode changed to ' + to_put + '!')
+
+else:
+    print('No flag specified! Use -h or --help for help!')

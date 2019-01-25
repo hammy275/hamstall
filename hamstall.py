@@ -7,7 +7,7 @@ import os
 import argparse
 from pathlib import Path
 import sys
-import re #Imports that are needed
+import re #Importing time
 
 def get_input(question, options, default): #Like input but with some checking
     answer = "-1" #Set answer to something
@@ -19,23 +19,33 @@ def get_input(question, options, default): #Like input but with some checking
     else:
         return answer #Return answer if it isn't the default answer
 
-def vprint(to_print): #Verbose print
+def vcheck(): #Check if we're verbose
     f = open(file.full('~/.hamstall/verbose'), 'r')
     open_file = f.readlines()
     f.close()
-    if 'True' in open_file[0]: #If we're supposed to be verbose
-        print(to_print) #Print verbose message
+    if 'True' in open_file[0]: #Are we verbose?
+        return True
+    else:
+        return False
+
+def vprint(to_print): #If we're verbose, print the supplied message
+    if vcheck():
+        print(to_print)
 
 
 
 class file:
     def name(program): #Get name of program as it's stored
-        program_internal_name = re.sub(r'.*/', '/', program) #Remove a lot of stuff (I'm going to pretend I know how re.sub works, but this gives you "/filename.tar.gz"
-        program_internal_name = program_internal_name[1:(len(program_internal_name)-7)] #Some Python formatting that turns the path into "tarname"
-        return program_internal_name #Return internal name (tarname)
+        program_internal_name = re.sub(r'.*/', '/', program) #Remove a lot of stuff (I'm going to pretend I know how re.sub works, but this gives you "/filename.extension"
+        extension_length = len(file.extension(program)) #Get length of our extension
+        program_internal_name = program_internal_name[1:(len(program_internal_name)-extension_length)] #Some Python formatting that turns the path into "archive name"
+        return program_internal_name #Return internal name (name of archive)
 
     def extension(program):
-        return program[((len(program))-7):len(program)] #Returns the last 7 characters of the provided file name.
+        if program[((len(program))-4):len(program)].lower() == '.zip': #Only supported 4 char file extension
+            return program[((len(program))-4):len(program)]
+        else:
+            return program[((len(program))-7):len(program)] #Returns the last 7 characters of the provided file name.
 
     def exists(file_name):
         return os.path.isfile(file.full(file_name)) #Returns True if the given file exists. Otherwise false.
@@ -69,14 +79,24 @@ class hamstall:
         vprint("Removing old temp directory (if it exists!)")
         os.system("rm -rf ~/.hamstall/temp") #Removes temp directory (used during installs)
         vprint("Creating new temp directory")
-        os.system("mkdir ~/.hamstall/temp") #Creates temp directory for extracting tar
-        vprint("Extracting tar to temp directory")
+        os.system("mkdir ~/.hamstall/temp") #Creates temp directory for extracting archive
+        vprint("Extracting archive to temp directory")
         file_extension = file.extension(program)
-        if file_extension == '.tar.gz':
-            command_to_go = "tar xf " + program + " -C ~/.hamstall/temp/"
-        elif file_extension == '.tar.xz':
-            command_to_go = "tar xf " + program + " -C ~/.hamstall/temp/"
-        os.system(command_to_go) #Extracts program tar
+        if vcheck():
+            vflag = 'v'
+        elif file_extension.lower() == '.zip':
+            vflag = '-qq'
+        else:
+            vflag = ''
+        if file_extension == '.tar.gz' or file_extension == '.tar.xz':
+            command_to_go = "tar " + vflag + "xf " + program + " -C ~/.hamstall/temp/"
+        elif file_extension == '.zip':
+            command_to_go = 'unzip ' + vflag + ' ' + program + ' -d ~/.hamstall/temp/'
+        else:
+            print('Error! File type ' + file_extension + ' not supported!')
+            return
+        vprint('File type detected: ' + file_extension)
+        os.system(command_to_go) #Extracts program archive
         vprint("Moving program to directory")
         os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
         os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
@@ -133,20 +153,22 @@ class hamstall:
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-i', "--install", help="Install a .tar.gz or .tar.xz")
+group.add_argument('-i', "--install", help="Install a .tar.gz, .tar.xz, or .zip")
 group.add_argument('-u', "--uninstall", help="Uninstall an insatlled program")
 group.add_argument('-l', "--list", help="List installed programs", action="store_true")
 group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
 group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
 group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
 args = parser.parse_args() #Parser stuff
+
+
 if args.install != None:
     to_install = args.install #to_install from the argument
-    does_tar_exist = file.exists(to_install)
-    if does_tar_exist == False:
+    does_archive_exist = file.exists(to_install)
+    if does_archive_exist == False:
         print("File to install does not exist!")
         sys.exit()
-    program_internal_name = file.name(to_install) #Get the internal name (trim off everything except the file name before the .tar.gz
+    program_internal_name = file.name(to_install) #Get the internal name (trim off everything except the file name before the .tar.gz/.tar.xz/.zip
     file_check = file.exists("~/.hamstall/uninstall_scripts/" + program_internal_name) #Checks to see if the file path for the program's uninstall script exists
     if file_check == True: #Uninstall script exists, ask to reinstall program
         reinstall = get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n") #Ask to reinstall

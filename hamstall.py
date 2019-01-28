@@ -83,11 +83,15 @@ class hamstall:
         vprint("Extracting archive to temp directory")
         file_extension = file.extension(program)
         if vcheck():
-            vflag = 'v'
-        elif file_extension.lower() == '.zip':
-            vflag = '-qq'
+            if file_extension == '.tar.gz' or file_extension == '.tar.xz':
+                vflag = 'v'
+            elif file_extension == '.zip':
+                vflag = ''
         else:
-            vflag = ''
+            if file_extension == '.tar.gz' or file_extension == '.tar.xz':
+                vflag = ''
+            elif file_extension == '.zip':
+                vflag = '-qq'
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             command_to_go = "tar " + vflag + "xf " + program + " -C ~/.hamstall/temp/"
         elif file_extension == '.zip':

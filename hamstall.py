@@ -74,6 +74,18 @@ class hamstall:
         os.system("echo False >> ~/.hamstall/verbose")
         print('First time setup complete!')
 
+    def verboseToggle():
+        f = open(file.full('~/.hamstall/verbose'), 'r')
+        open_file = f.readlines()
+        f.close() #Open file and read contents
+        os.system('rm -rf ~/.hamstall/verbose') #Remvoe old verbose file
+        if 'False' in open_file[0]:
+            to_put = 'True'
+        else:
+            to_put = 'False' #Toggle
+        os.system('echo ' + to_put + ' >> ~/.hamstall/verbose') #Change verbose mode
+        print('Verbose mode changed to ' + to_put + '!')
+
     def install(program):
         program_internal_name = file.name(program)
         vprint("Removing old temp directory (if it exists!)")
@@ -210,16 +222,7 @@ elif args.erase:
         print('Erase cancelled.')
 
 elif args.verbose: #Verbose toggle
-    f = open(file.full('~/.hamstall/verbose'), 'r')
-    open_file = f.readlines()
-    f.close() #Open file and read contents
-    os.system('rm -rf ~/.hamstall/verbose') #Remvoe old verbose file
-    if 'False' in open_file[0]:
-        to_put = 'True'
-    else:
-        to_put = 'False' #Toggle
-    os.system('echo ' + to_put + ' >> ~/.hamstall/verbose') #Change verbose mode
-    print('Verbose mode changed to ' + to_put + '!')
+    hamstall.verboseToggle()
 
 else:
     print('No flag specified! Use -h or --help for help!')

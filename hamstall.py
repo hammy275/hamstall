@@ -7,10 +7,13 @@ import os
 import argparse
 from pathlib import Path
 import sys
-import re #Importing time
+import re
+import getpass
+from shutil import copyfile
+
 
 def get_input(question, options, default): #Like input but with some checking
-    answer = "-1" #Set answer to something
+    answer = "This is a string. There are many others like it, but this one is mine." #Set answer to something
     while answer not in options and answer != "":
         answer = input(question)
         answer = answer.lower() #Loop ask question while the answer is invalid or not blank
@@ -59,20 +62,50 @@ class hamstall:
         vprint('Removing PATH lines from bashrc')
         for program in os.listdir(file.full('~/.hamstall/uninstall_scripts/')):
             hamstall.removeFromPath(program) #Remove all programs from bashrc
+        vprint('Removing hamstall command alias')
+        to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'" + '\n' #Line to be removed
+        file_path = file.full('~/.bashrc') #Set file path to bashrc
+        f = open(file_path, 'r') #Open bashrc
+        open_file = f.readlines() #Copy bashrc to program
+        f.close() #Close bashrc
+
+        rewrite = ''''''
+
+        for line in open_file:
+            if line == to_be_removed:
+                vprint('Line removed!')
+            else:
+                rewrite += line #Loop that removes line that needs removal from the copy of bashrc
+        written = open(file_path, 'w')
+        written.write(str(rewrite))
+        written.close() #Write then close our new bashrc
+        vprint('Alias removal complete!')
+        vprint('Removing hamstall directory')
         os.system('rm -rf ~/.hamstall')
         print("Hamstall has been removed from your system.")
-        print('If you would like to use hamstall again, please use the Python file.')
-        print('Otherwise, you may remove this python script from your system.')
+        print('Please restart your terminal.')
         input('Press return to exit...')
 
     def firstTimeSetup():
+        username = getpass.getuser()
+        if username == 'root':
+            print('Please do not run first time setup as root user!')
+            sys.exit()
+        if os.path.realpath(__file__) == ('/home/' + username + '/.hamstall/hamstall.py'):
+            print('Please don\'t run first time setup on an already installed system!')
+            sys.exit()
         print('Installing hamstall to your system...')
         os.system("mkdir ~/.hamstall")
         os.system("mkdir ~/.hamstall/temp")
         os.system("mkdir ~/.hamstall/bin")
         os.system("mkdir ~/.hamstall/uninstall_scripts") #Create some directories
-        os.system("echo False >> ~/.hamstall/verbose")
+        os.system("echo False >> ~/.hamstall/verbose") #Write verbosity file (will most likely be changed to a more generic settings file later)
+        copyfile(os.path.realpath(__file__), file.full('~/.hamstall/hamstall.py')) #Copy hamstall to hamstall directory
+        os.system("echo \"alias hamstall='python3 ~/.hamstall/hamstall.py'\" >> ~/.bashrc")
+        #os.remove(os.path.realpath(__file__))
         print('First time setup complete!')
+        print('Please run the command "source ~/.bashrc" or restart your terminal.')
+        print('Afterwards, you may begin using hamstall with the hamstall command!')
 
     def verboseToggle():
         f = open(file.full('~/.hamstall/verbose'), 'r')
@@ -164,8 +197,6 @@ class hamstall:
 
 
 ###############Argument Parsing Below###############
-
-
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()

@@ -63,22 +63,7 @@ class hamstall:
         for program in os.listdir(file.full('~/.hamstall/uninstall_scripts/')):
             hamstall.removeFromPath(program) #Remove all programs from bashrc
         vprint('Removing hamstall command alias')
-        to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'" + '\n' #Line to be removed
-        file_path = file.full('~/.bashrc') #Set file path to bashrc
-        f = open(file_path, 'r') #Open bashrc
-        open_file = f.readlines() #Copy bashrc to program
-        f.close() #Close bashrc
-
-        rewrite = ''''''
-
-        for line in open_file:
-            if line == to_be_removed:
-                vprint('Line removed!')
-            else:
-                rewrite += line #Loop that removes line that needs removal from the copy of bashrc
-        written = open(file_path, 'w')
-        written.write(str(rewrite))
-        written.close() #Write then close our new bashrc
+        hamstall.removeFromPath('alias')
         vprint('Alias removal complete!')
         vprint('Removing hamstall directory')
         os.system('rm -rf ~/.hamstall')
@@ -148,7 +133,13 @@ class hamstall:
         os.system(command_to_go) #Extracts program archive
         vprint("Moving program to directory")
         os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
-        os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
+        vprint('Checking for folder in folder')
+        if os.path.isdir(file.full('~/.hamstall/temp/' + program_internal_name + '/')):
+            vprint('Folder in folder detected! Using that directory instead...')
+            os.system("mv ~/.hamstall/temp/" + program_internal_name + "/* ~/.hamstall/bin/" + program_internal_name )
+        else:
+            vprint('Folder in folder not detected!')
+            os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
         vprint("Adding program to hamstall list of programs")
         os.system('echo "rm -rf ~/.hamstall/bin/' + program_internal_name + '" > ~/.hamstall/uninstall_scripts/' + program_internal_name) #Creates uninstall script
         os.system('chmod +x ~/.hamstall/uninstall_scripts/' + program_internal_name) #Adds line to uninstall script to remove it
@@ -170,8 +161,12 @@ class hamstall:
         print("Uninstall complete!")
 
     def removeFromPath(program):
-        vprint('Removing ' + program + ' from PATH through bashrc.')
-        to_be_removed = "export PATH=$PATH:~/.hamstall/bin/" + program + '\n' #Line to be removed
+        if program != 'alias':
+            vprint('Removing ' + program + ' from PATH through bashrc.')
+            to_be_removed = "export PATH=$PATH:~/.hamstall/bin/" + program + '\n' #Line to be removed
+        elif program == 'alias':
+            vprint('Removing hamstall alias from bashrc')
+            to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'\n"
         file_path = file.full('~/.bashrc') #Set file path to bashrc
         f = open(file_path, 'r') #Open bashrc
         open_file = f.readlines() #Copy bashrc to program
@@ -187,7 +182,10 @@ class hamstall:
         written = open(file_path, 'w')
         written.write(str(rewrite))
         written.close() #Write then close our new bashrc
-        vprint('Removal from PATH complete!')
+        if program != 'alias':
+            vprint('Removal from PATH complete!')
+        elif program == 'alias':
+            vprint('Alias removal complete!')
         return
 
     def listPrograms():

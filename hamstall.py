@@ -11,6 +11,7 @@ import re
 import getpass
 from shutil import copyfile
 from shutil import rmtree #Imports
+from shutil import move
 
 
 def get_input(question, options, default): #Like input but with some checking
@@ -131,7 +132,7 @@ class hamstall:
         to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'"
         file.remove_line(to_be_removed, '~/.bashrc')
         vprint('Removing hamstall directory')
-        os.system('rm -rf ~/.hamstall')
+        rmtree(file.full('~/.hamstall'))
         print("Hamstall has been removed from your system.")
         print('Please restart your terminal.')
         input('Press return to exit...')
@@ -141,9 +142,9 @@ class hamstall:
             print('Please don\'t run first time setup on an already installed system!')
             sys.exit()
         print('Installing hamstall to your system...')
-        os.system("mkdir ~/.hamstall")
-        os.system("mkdir ~/.hamstall/temp")
-        os.system("mkdir ~/.hamstall/bin")
+        os.mkdir(file.full("~/.hamstall"))
+        os.mkdir(file.full("~/.hamstall/temp"))
+        os.mkdir(file.full("~/.hamstall/bin"))
         file.create("~/.hamstall/database")
         file.create("~/.hamstall/config")
         file.add_line("Verbose=False\n","~/.hamstall/config") #Write verbosity line to config
@@ -165,7 +166,7 @@ class hamstall:
         except:
             vprint("Temp directory did not exist!")
         vprint("Creating new temp directory")
-        os.system("mkdir ~/.hamstall/temp") #Creates temp directory for extracting archive
+        os.mkdir(file.full("~/.hamstall/temp")) #Creates temp directory for extracting archive
         vprint("Extracting archive to temp directory")
         file_extension = file.extension(program)
         if config.vcheck():
@@ -184,18 +185,23 @@ class hamstall:
             command_to_go = 'unzip ' + vflag + ' ' + program + ' -d ~/.hamstall/temp/'
         else:
             print('Error! File type ' + file_extension + ' not supported!')
-            return
+            return #Creates the command to run to extract the archive
         vprint('File type detected: ' + file_extension)
         os.system(command_to_go) #Extracts program archive
-        vprint("Moving program to directory")
-        os.system("mkdir ~/.hamstall/bin/" + program_internal_name) #Makes directory for program
         vprint('Checking for folder in folder')
         if os.path.isdir(file.full('~/.hamstall/temp/' + program_internal_name + '/')):
             vprint('Folder in folder detected! Using that directory instead...')
-            os.system("mv ~/.hamstall/temp/" + program_internal_name + "/* ~/.hamstall/bin/" + program_internal_name )
+            source = file.full('~/.hamstall/temp/' + program_internal_name + '/')
+            dest = file.full('~/.hamstall/bin/')
         else:
             vprint('Folder in folder not detected!')
-            os.system("mv ~/.hamstall/temp/* ~/.hamstall/bin/" + program_internal_name ) #Moves program files
+            source_r = file.full("~/.hamstall/temp")
+            dest_r = file.full("~/.hamstall/" + program_internal_name)
+            os.rename(source_r, dest_r) #Renames temp folder to program name before move
+            source = file.full('~/.hamstall/' + program_internal_name)
+            dest = file.full('~/.hamstall/bin/')
+        vprint("Moving program to directory")
+        move(source,dest)
         vprint("Adding program to hamstall list of programs")
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
         ###PATH CODE###
@@ -216,7 +222,13 @@ class hamstall:
         print("Uninstall complete!")
 
     def listPrograms():
-        os.system("cat ~/.hamstall/database")
+        f = open(file.full('~/.hamstall/database'), 'r')
+        open_file = f.readlines()
+        f.close()
+        for l in open_file:
+            newl = l.rstrip()
+            print(newl)
+        sys.exit()
 
 
 

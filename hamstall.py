@@ -55,6 +55,7 @@ class config:
 
     def vcheck():
         return(config.readConfig('Verbose'))
+    
 
 class file:
     def name(program): #Get name of program as it's stored
@@ -74,6 +75,17 @@ class file:
 
     def full(file_name):
         return os.path.expanduser(file_name) #Returns path specified with ~ corrected to /home/USERNAME
+    
+    def spaceify(file_name): #Adds \ before every space (for command purposes)
+        char_list = []
+        for c in file_name:
+            if c == ' ':
+                char_list.append('\\')
+            char_list.append(c)
+        return_string = ''
+        for i in char_list:
+            return_string = return_string + i
+        return return_string
     
     def check_line(line,file_path): #Checks to see if a line exists in a file
         f = open(file.full(file_path), 'r')
@@ -112,12 +124,18 @@ class file:
         written.close() #Write then close our new copy of the file
         return
         
-    def add_line(line, file_path):
+    def add_line(line, file_path): #Add a line to a file
         file_path = file.full(file_path)
         f = open(file_path, 'a')
         f.write(line)
         f.close()
         return
+
+    def space_check(name): #Checks if there is a space in the name of something
+        for c in name:
+            if c == ' ':
+                return True
+        return False
 
 
 class hamstall:
@@ -160,6 +178,9 @@ class hamstall:
 
     def install(program):
         program_internal_name = file.name(program)
+        if file.space_check(program_internal_name):
+            print("Error! Archive name contains a space!")
+            sys.exit()
         vprint("Removing old temp directory (if it exists!)")
         try:
             rmtree(file.full("~/.hamstall/temp/")) #Removes temp directory (used during installs)
@@ -169,6 +190,7 @@ class hamstall:
         os.mkdir(file.full("~/.hamstall/temp")) #Creates temp directory for extracting archive
         vprint("Extracting archive to temp directory")
         file_extension = file.extension(program)
+        program = file.spaceify(program)
         if config.vcheck():
             if file_extension == '.tar.gz' or file_extension == '.tar.xz':
                 vflag = 'v'
@@ -206,7 +228,7 @@ class hamstall:
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
         ###PATH CODE###
         vprint('Adding program to PATH')
-        line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + '\n'
+        line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + file.spaceify(program_internal_name) + '\n'
         file.add_line(line_to_write,"~/.bashrc")
         ###/PATH CODE###
         print("Install Completed!")
@@ -237,7 +259,7 @@ class hamstall:
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-i', "--install", help="Install a .tar.gz, .tar.xz, or .zip")
-group.add_argument('-u', "--uninstall", help="Uninstall an insatlled program")
+group.add_argument('-r', "--remove", help="Remove an insatlled program")
 group.add_argument('-l', "--list", help="List installed programs", action="store_true")
 group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
 group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
@@ -246,8 +268,7 @@ args = parser.parse_args() #Parser stuff
 
 username = getpass.getuser()
 if username == 'root':
-    print('Please do not run first time setup as root user (don\'t use sudo)!')
-    sys.exit()
+    print('Note: Running as root user will install programs for the root user to use!')
 
 if args.install != None:
     to_install = args.install #to_install from the argument
@@ -267,8 +288,8 @@ if args.install != None:
     else:
         hamstall.install(to_install) #No reinstall needed to be asked, install program
 
-elif args.uninstall != None:
-    to_uninstall = args.uninstall
+elif args.remove != None:
+    to_uninstall = args.remove
     if file.check_line(to_uninstall, "~/.hamstall/database"): #If uninstall script exists
         hamstall.uninstall(to_uninstall) #Uninstall program
     else:

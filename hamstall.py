@@ -71,8 +71,10 @@ class file:
             return program[((len(program))-7):len(program)] #Returns the last 7 characters of the provided file name.
 
     def exists(file_name):
-        return os.path.isfile(file.full(file_name)) #Returns True if the given file exists. Otherwise false.
-
+        try:
+            return os.path.isfile(file.full(file_name)) #Returns True if the given file exists. Otherwise false.
+        except FileNotFoundError:
+            return False
     def full(file_name):
         return os.path.expanduser(file_name) #Returns path specified with ~ corrected to /home/USERNAME
     
@@ -140,6 +142,9 @@ class file:
 
 class hamstall:
     def erase():
+        if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
+            print("hamstall not detected so not removed!")
+            sys.exit()
         vprint('Removing PATH lines from bashrc')
         file_to_open = file.full("~/.hamstall/database")
         f = open(file_to_open, 'r')

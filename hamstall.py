@@ -236,7 +236,18 @@ class hamstall:
         line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + file.spaceify(program_internal_name) + '\n'
         file.add_line(line_to_write,"~/.bashrc")
         ###/PATH CODE###
-        print("Install Completed!")
+        print("Install completed!")
+        sys.exit()
+    
+    def dirinstall(program_path, program_internal_name):
+        vprint("Moving folder to hamstall destination")
+        move(program_path, file.full("~/.hamstall/bin/"))
+        vprint("Adding program to hamstall list of programs")
+        file.add_line(program_internal_name + '\n',"~/.hamstall/database")
+        vprint("Adding program to PATH")
+        line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + file.spaceify(program_internal_name) + '\n'
+        file.add_line(line_to_write,"~/.bashrc")
+        print("Install completed!")
 
     def uninstall(program):
         vprint("Removing program")
@@ -264,6 +275,7 @@ class hamstall:
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-i', "--install", help="Install a .tar.gz, .tar.xz, or .zip")
+group.add_argument('-d', "--dirinstall", help="Install a directory")
 group.add_argument('-r', "--remove", help="Remove an insatlled program")
 group.add_argument('-l', "--list", help="List installed programs", action="store_true")
 group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
@@ -282,8 +294,8 @@ if args.install != None:
         print("File to install does not exist!")
         sys.exit()
     program_internal_name = file.name(to_install) #Get the internal name (trim off everything except the file name before the .tar.gz/.tar.xz/.zip
-    file_check = file.exists("~/.hamstall/uninstall_scripts/" + program_internal_name) #Checks to see if the file path for the program's uninstall script exists
-    if file_check == True: #Uninstall script exists, ask to reinstall program
+    file_check = file.check_line(program_internal_name, "~/.hamstall/database") #Checks to see if the file path for the program's uninstall script exists
+    if file_check: #Ask to reinstall program
         reinstall = get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n") #Ask to reinstall
         if reinstall == "y":
             hamstall.uninstall(program_internal_name)
@@ -292,6 +304,29 @@ if args.install != None:
             print("Reinstall cancelled.")
     else:
         hamstall.install(to_install) #No reinstall needed to be asked, install program
+
+if args.dirinstall != None:
+    to_install = args.dirinstall
+    if os.path.isdir(to_install) == False:
+        print("Folder to install does not exist!")
+        sys.exit()
+    if to_install[len(to_install) - 1] != '/':
+        print("Please make sure the directory ends with a / !")
+        sys.exit()
+    progintnametemp = to_install[0:len(to_install)-1]
+    program_internal_name = file.name(progintnametemp + '.tar.gz') #Add .tar.gz to make the original function work (a hackey solution I know)
+    file_check = file.check_line(program_internal_name, "~/.hamstall/database")
+    if file_check:
+        reinstall = get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n")
+        if reinstall == 'y':
+            hamstall.uninstall(program_internal_name)
+            hamstall.dirinstall(to_install, program_internal_name)
+        else:
+            print("Reinstall cancelled.")
+            sys.exit()
+    else:
+        hamstall.dirinstall(to_install, program_internal_name)
+
 
 elif args.remove != None:
     to_uninstall = args.remove

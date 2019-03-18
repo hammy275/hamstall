@@ -12,6 +12,17 @@ import getpass
 from shutil import copyfile
 from shutil import rmtree #Imports
 from shutil import move
+try:
+    import requests
+except:
+    print('Please install requests! The command "pip3 install requests" on Linux systems should do the job!')
+    sys.exit()
+
+###HAMSTALL VERSIONS###
+prog_version_internal = 1
+file_version = 1 #These are used internally for updating and for converting older hamstalls up.
+version = "0.9" #String in case I ever decide to add letters. Will only be displayed to end users.
+
 
 
 def get_input(question, options, default): #Like input but with some checking
@@ -43,6 +54,9 @@ class config:
                     return False
                 elif 'True' in open_line:
                     return True
+                else:
+                    to_return = str(open_line[1:])
+                    return to_return.rstrip()
             else:
                 line_num += 1 
     
@@ -141,6 +155,37 @@ class file:
 
 
 class hamstall:
+    def update():
+        global prog_version_internal
+        vprint("Checking version on GitHub")
+        version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
+        version_raw = requests.get(version_url)
+        version = version_raw.text
+        counter = 0
+        for c in version:
+            if c == '.':
+                spot = counter + 1
+            else:
+                counter += 1
+        final_version = int(version[spot:])
+        vprint('Installed internal version: ' + str(prog_version_internal))
+        vprint('Version on GitHub: ' + str(final_version))
+        if final_version > prog_version_internal:
+            print("An update has been found! Installing...")
+            vprint("Downloading new hamstall...")
+            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/hamstall.py")
+            vprint("Replacing old hamstall with new version")
+            os.remove(file.full("~/.hamstall/hamstall.py"))
+            os.remove(file.full("~/.hamstall/version"))
+            open(file.full("~/.hamstall/hamstall.py"), 'wb').write(r.content)
+            open(file.full('~/.hamstall/version'), 'wb').write(version_raw.content)
+            ###hamstall directory conversion code here when needed###
+            sys.exit()
+        else:
+            print("No update found!")
+            sys.exit()
+        
+
     def erase():
         if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
             print("hamstall not detected so not removed!")
@@ -161,6 +206,8 @@ class hamstall:
         input('Press return to exit...')
 
     def firstTimeSetup():
+        global prog_version_internal
+        global file_version #Yes globals aren't the best, but this just makes life easier
         if file.exists(file.full('~/.hamstall/hamstall.py')):
             print('Please don\'t run first time setup on an already installed system!')
             sys.exit()
@@ -281,6 +328,7 @@ group.add_argument('-l', "--list", help="List installed programs", action="store
 group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
 group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
 group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
+group.add_argument('-u', '--update', help="Update hamstall if an update is available", action="store_true")
 args = parser.parse_args() #Parser stuff
 
 username = getpass.getuser()
@@ -355,11 +403,18 @@ elif args.erase:
 elif args.verbose: #Verbose toggle
     hamstall.verboseToggle()
 
+elif args.update:
+    hamstall.update()
 
 else:
     username = getpass.getuser()
     if file.exists('/home/' + username + '/.hamstall/hamstall.py'):
-        print('No flag specified! Use -h or --help for help!')
+        #About hamstall
+        print('\nhamstall. A Python package manager to manage archives.')
+        print("Written by: hammy3502\n")
+        print('hamstall version: ' + version)
+        print('Internal version code: ' + str(file_version) + "." + str(prog_version_internal) + "\n")
+        print('For help, type hamstall -h\n')
     else:
         yn = get_input('hamstall is not on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
         if yn == 'y':

@@ -103,13 +103,18 @@ class file:
             return_string = return_string + i
         return return_string
     
-    def check_line(line,file_path): #Checks to see if a line exists in a file
+    def check_line(line,file_path, mode): #Checks to see if a line exists in a file
         f = open(file.full(file_path), 'r')
         open_file = f.readlines()
         f.close()
         line_num = 0
         for l in open_file:
-            if line in l:
+            if mode == 'word':
+                new_l = l.rstrip()
+                new_l = new_l.split()
+            elif mode == 'fuzzy':
+                new_l = l.rstrip()
+            if line in new_l:
                 return True
             else:
                 line_num += 1
@@ -160,7 +165,7 @@ class file:
 class hamstall:
     def binlink(program_internal_name):
         yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory? [y/N]?', ['y', 'n'], 'n')
-        if yn == 'y':
+        while yn == 'y':
             files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
             print(' '.join(files))
             file_chosen = 'Cool fact. This line was originally written on line 163.'
@@ -171,7 +176,7 @@ class hamstall:
             line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/') + program_internal_name + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
             vprint("Adding alias to bashrc")
             file.add_line(line_to_add, '~/.bashrc')
-            hamstall.binlink(program_internal_name)
+            yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
         else:
             sys.exit()
 
@@ -218,7 +223,7 @@ class hamstall:
             file.remove_line(to_remove, '~/.bashrc', 'word')
         vprint('Removing hamstall command alias')
         to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'"
-        file.remove_line(to_be_removed, '~/.bashrc', 'word')
+        file.remove_line(to_be_removed, '~/.bashrc', 'fuzzy')
         vprint('Removing hamstall directory')
         rmtree(file.full('~/.hamstall'))
         print("Hamstall has been removed from your system.")
@@ -303,8 +308,7 @@ class hamstall:
             vprint('Adding program to PATH')
             line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
             file.add_line(line_to_write,"~/.bashrc")
-        else:
-            hamstall.binlink(program_internal_name)
+        hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()
     
@@ -318,8 +322,7 @@ class hamstall:
             vprint("Adding program to PATH")
             line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
             file.add_line(line_to_write,"~/.bashrc")
-        else:
-            hamstall.binlink(program_internal_name)
+        hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()
 
@@ -368,7 +371,7 @@ if args.install != None:
         print("File to install does not exist!")
         sys.exit()
     program_internal_name = file.name(to_install) #Get the internal name (trim off everything except the file name before the .tar.gz/.tar.xz/.zip
-    file_check = file.check_line(program_internal_name, "~/.hamstall/database") #Checks to see if the file path for the program's uninstall script exists
+    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') #Checks to see if the file path for the program's uninstall script exists
     if file_check: #Ask to reinstall program
         reinstall = get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n") #Ask to reinstall
         if reinstall == "y":
@@ -376,6 +379,7 @@ if args.install != None:
             hamstall.install(to_install) #Reinstall
         else:
             print("Reinstall cancelled.")
+            sys.exit()
     else:
         hamstall.install(to_install) #No reinstall needed to be asked, install program
 
@@ -389,7 +393,7 @@ if args.dirinstall != None:
         sys.exit()
     progintnametemp = to_install[0:len(to_install)-1]
     program_internal_name = file.name(progintnametemp + '.tar.gz') #Add .tar.gz to make the original function work (a hackey solution I know)
-    file_check = file.check_line(program_internal_name, "~/.hamstall/database")
+    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word')
     if file_check:
         reinstall = get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n")
         if reinstall == 'y':
@@ -404,16 +408,19 @@ if args.dirinstall != None:
 
 elif args.remove != None:
     to_uninstall = args.remove
-    if file.check_line(to_uninstall, "~/.hamstall/database"): #If uninstall script exists
+    if file.check_line(to_uninstall, "~/.hamstall/database", 'word'): #If uninstall script exists
         hamstall.uninstall(to_uninstall) #Uninstall program
     else:
         print("Program does not exist!") #Program doesn't exist
+    sys.exit()
 
 elif args.list:
     hamstall.listPrograms() #List programs installed
+    sys.exit()
 
 elif args.first:
     hamstall.firstTimeSetup() #First time setup
+    sys.exit()
 
 elif args.erase:
     erase_sure = get_input("Are you sure you would like to remove hamstall from your system? [y/N]", ['y', 'n'], 'n')
@@ -425,6 +432,7 @@ elif args.erase:
             print('Erase cancelled.')
     else:
         print('Erase cancelled.')
+    sys.exit()
 
 elif args.verbose: #Verbose toggle
     hamstall.verboseToggle()

@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 #Hamstall
-#Should be ready for an actual environment pretty soon. Will still be in beta so I have an excuse to make changes without worrying about backwards compatability though.
+#A package manager for managing archives
+#Written by hammy3502
 
 import os
 import argparse
@@ -21,7 +22,7 @@ except:
 ###HAMSTALL VERSIONS###
 prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
-version = "0.9" #String in case I ever decide to add letters. Will only be displayed to end users.
+version = "1.0.0 beta 1" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 
 
@@ -35,9 +36,9 @@ def get_input(question, options, default): #Like input but with some checking
     else:
         return answer #Return answer if it isn't the default answer
 
-
 def vprint(to_print): #If we're verbose, print the supplied message
-    if config.vcheck():
+    global verbose
+    if verbose:
         print(to_print)
 
 class config:
@@ -69,7 +70,6 @@ class config:
 
     def vcheck():
         return(config.readConfig('Verbose'))
-    
 
 class file:
     def name(program): #Get name of program as it's stored
@@ -134,13 +134,18 @@ class file:
         rewrite = ''''''
 
         for l in open_file:
-            if mode == 'word':
+            if mode == 'word' or mode == 'poundword':
                 new_l = l.rstrip()
                 new_l = new_l.split()
             elif mode == 'fuzzy':
                 new_l = l.rstrip()
             if line in new_l:
-                vprint('Line removed!')
+                if mode == 'poundword' and '#' in new_l:
+                    vprint('Line removed!')
+                elif mode == 'fuzzy' or mode == 'word':
+                    vprint('Line removed!')
+                else:
+                    rewrite += l
             else:
                 rewrite += l #Loop that removes line that needs removal from the copy of the file
         written = open(file_path, 'w')
@@ -220,7 +225,7 @@ class hamstall:
         f = open(file_to_open, 'r')
         for l in f:
             to_remove = l.rstrip()
-            file.remove_line(to_remove, '~/.bashrc', 'word')
+            file.remove_line(to_remove, '~/.bashrc', 'poundword')
         vprint('Removing hamstall command alias')
         to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'"
         file.remove_line(to_be_removed, '~/.bashrc', 'fuzzy')
@@ -248,6 +253,7 @@ class hamstall:
         print('First time setup complete!')
         print('Please run the command "source ~/.bashrc" or restart your terminal.')
         print('Afterwards, you may begin using hamstall with the hamstall command!')
+        sys.exit()
 
     def verboseToggle():
         config.changeConfig('Verbose')
@@ -302,7 +308,6 @@ class hamstall:
         move(source,dest)
         vprint("Adding program to hamstall list of programs")
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
-        ###PATH CODE###
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
         if yn == 'y':
             vprint('Adding program to PATH')
@@ -330,10 +335,11 @@ class hamstall:
         vprint("Removing program")
         rmtree(file.full("~/.hamstall/bin/" + program + '/')) #Removes program
         vprint("Removing program from PATH")
-        file.remove_line(program,"~/.bashrc", 'word')
+        file.remove_line(program,"~/.bashrc", 'poundword')
         vprint("Removing program from hamstall list of programs")
         file.remove_line(program,"~/.hamstall/database", 'word')
         print("Uninstall complete!")
+        sys.exit()
 
     def listPrograms():
         f = open(file.full('~/.hamstall/database'), 'r')
@@ -344,7 +350,10 @@ class hamstall:
             print(newl)
         sys.exit()
 
-
+try:
+    verbose = config.vcheck() #Check verbosity once
+except FileNotFoundError:
+    verbose = False #If we don't have a config don't worry about it
 
 ###############Argument Parsing###############
 
@@ -416,11 +425,9 @@ elif args.remove != None:
 
 elif args.list:
     hamstall.listPrograms() #List programs installed
-    sys.exit()
 
 elif args.first:
     hamstall.firstTimeSetup() #First time setup
-    sys.exit()
 
 elif args.erase:
     erase_sure = get_input("Are you sure you would like to remove hamstall from your system? [y/N]", ['y', 'n'], 'n')

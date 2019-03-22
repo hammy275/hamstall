@@ -22,7 +22,7 @@ except:
 ###HAMSTALL VERSIONS###
 prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
-version = "1.0.0 beta 2" #String in case I ever decide to add letters. Will only be displayed to end users.
+version = "1.0.0 beta 3" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 
 def get_input(question, options, default): #Like input but with some checking
@@ -179,16 +179,17 @@ class hamstall:
             file.add_line(file_chosen + ' # ' + program_internal_name + '\n', '~/.hamstall/database') #Files in ext4 can't have a / in them (because directories) so we can exploit that here
             line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/') + program_internal_name + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
             vprint("Adding alias to bashrc")
-            file.add_line(line_to_add, '~/.bashrc')
+            file.add_line(line_to_add, "~/.hamstall/.bashrc")
             yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
         else:
             sys.exit()
+
     def pathify(program_internal_name):
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
         if yn == 'y':
             vprint('Adding program to PATH')
             line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-            file.add_line(line_to_write,"~/.bashrc")
+            file.add_line(line_to_write,"~/.hamstall/.bashrc")
         return
 
     def update():
@@ -226,15 +227,11 @@ class hamstall:
         if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
             print("hamstall not detected so not removed!")
             sys.exit()
-        vprint('Removing added lines from bashrc')
-        file_to_open = file.full("~/.hamstall/database")
-        f = open(file_to_open, 'r')
-        for l in f:
-            to_remove = l.rstrip()
-            file.remove_line(to_remove, '~/.bashrc', 'poundword')
+        vprint('Removing source line from bashrc')
+        file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
         vprint('Removing hamstall command alias')
         to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'"
-        file.remove_line(to_be_removed, '~/.bashrc', 'fuzzy')
+        file.remove_line(to_be_removed, "~/.hamstall/.bashrc", 'fuzzy')
         vprint('Removing hamstall directory')
         rmtree(file.full('~/.hamstall'))
         print("Hamstall has been removed from your system.")
@@ -253,9 +250,11 @@ class hamstall:
         os.mkdir(file.full("~/.hamstall/bin"))
         file.create("~/.hamstall/database")
         file.create("~/.hamstall/config")
+        file.create("~/.hamstall/.bashrc")
         file.add_line("Verbose=False\n","~/.hamstall/config") #Write verbosity line to config
         copyfile(os.path.realpath(__file__), file.full('~/.hamstall/hamstall.py')) #Copy hamstall to hamstall directory
-        file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.bashrc")
+        file.add_line("source ~/.hamstall/.bashrc", "~/.bashrc")
+        file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")
         print('First time setup complete!')
         print('Please run the command "source ~/.bashrc" or restart your terminal.')
         print('Afterwards, you may begin using hamstall with the hamstall command!')
@@ -328,7 +327,7 @@ class hamstall:
         if yn == y:
             vprint("Adding program to PATH")
             line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-            file.add_line(line_to_write,"~/.bashrc")
+            file.add_line(line_to_write, "~/.hamstall/.bashrc")
         hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()
@@ -337,7 +336,7 @@ class hamstall:
         vprint("Removing program")
         rmtree(file.full("~/.hamstall/bin/" + program + '/')) #Removes program
         vprint("Removing program from PATH")
-        file.remove_line(program,"~/.bashrc", 'poundword')
+        file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
         vprint("Removing program from hamstall list of programs")
         file.remove_line(program,"~/.hamstall/database", 'word')
         print("Uninstall complete!")

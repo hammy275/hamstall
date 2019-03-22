@@ -22,7 +22,7 @@ except:
 ###HAMSTALL VERSIONS###
 prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
-version = "1.0.0 beta 1" #String in case I ever decide to add letters. Will only be displayed to end users.
+version = "1.0.0 beta 2" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 
 
@@ -339,7 +339,7 @@ class hamstall:
         vprint("Removing program from hamstall list of programs")
         file.remove_line(program,"~/.hamstall/database", 'word')
         print("Uninstall complete!")
-        sys.exit()
+        return
 
     def listPrograms():
         f = open(file.full('~/.hamstall/database'), 'r')

@@ -25,7 +25,6 @@ file_version = 1 #These are used internally for updating and for converting olde
 version = "1.0.0 beta 2" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 
-
 def get_input(question, options, default): #Like input but with some checking
     answer = "This is a string. There are many others like it, but this one is mine." #Set answer to something
     while answer not in options and answer != "":
@@ -160,9 +159,9 @@ class file:
         f.close()
         return
 
-    def space_check(name): #Checks if there is a space in the name of something
+    def char_check(name): #Checks if there is a space in the name of something
         for c in name:
-            if c == ' ':
+            if c == ' ' or c == '#':
                 return True
         return False
 
@@ -184,6 +183,13 @@ class hamstall:
             yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
         else:
             sys.exit()
+    def pathify(program_internal_name):
+        yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
+        if yn == 'y':
+            vprint('Adding program to PATH')
+            line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
+            file.add_line(line_to_write,"~/.bashrc")
+        return
 
     def update():
         global prog_version_internal
@@ -260,8 +266,8 @@ class hamstall:
 
     def install(program):
         program_internal_name = file.name(program)
-        if file.space_check(program_internal_name):
-            print("Error! Archive name contains a space!")
+        if file.char_check(program_internal_name):
+            print("Error! Archive name contains a space or #!")
             sys.exit()
         vprint("Removing old temp directory (if it exists!)")
         try:
@@ -308,11 +314,7 @@ class hamstall:
         move(source,dest)
         vprint("Adding program to hamstall list of programs")
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
-        yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-        if yn == 'y':
-            vprint('Adding program to PATH')
-            line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-            file.add_line(line_to_write,"~/.bashrc")
+        hamstall.pathify(program_internal_name)
         hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()

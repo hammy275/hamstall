@@ -229,9 +229,6 @@ class hamstall:
             sys.exit()
         vprint('Removing source line from bashrc')
         file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
-        vprint('Removing hamstall command alias')
-        to_be_removed = "alias hamstall='python3 ~/.hamstall/hamstall.py'"
-        file.remove_line(to_be_removed, "~/.hamstall/.bashrc", 'fuzzy')
         vprint('Removing hamstall directory')
         rmtree(file.full('~/.hamstall'))
         print("Hamstall has been removed from your system.")
@@ -252,7 +249,10 @@ class hamstall:
         file.create("~/.hamstall/config")
         file.create("~/.hamstall/.bashrc")
         file.add_line("Verbose=False\n","~/.hamstall/config") #Write verbosity line to config
-        copyfile(os.path.realpath(__file__), file.full('~/.hamstall/hamstall.py')) #Copy hamstall to hamstall directory
+        hamstall_file = os.path.realpath(__file__)
+        copyfile(hamstall_file, file.full('~/.hamstall/hamstall.py')) #Copy hamstall to hamstall directory
+        version_file = hamstall_file[0:len(hamstall_file) - 11] + 'version'
+        copyfile(version_file, file.full('~/.hamstall/version'))
         file.add_line("source ~/.hamstall/.bashrc", "~/.bashrc")
         file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")
         print('First time setup complete!')

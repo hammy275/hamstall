@@ -167,22 +167,42 @@ class file:
 
 
 class hamstall:
+    def manage(program):
+        while True:
+            print("Enter an option to manage " + program + ":")
+            print("b - Create binlinks")
+            print("p - Add program to PATH")
+            print("u - Uninstall program")
+            print("r - Remove all binlinks + PATHs for program")
+            print("E - Exit program management")
+            option = get_input("[b/p/u/r/E]", ['b','p','u','r','e'], 'e')
+            if option == 'b':
+                hamstall.binlink(program)
+            elif option == 'p':
+                hamstall.pathify(program)
+            elif option == 'u':
+                hamstall.uninstall(program)
+                sys.exit()
+            elif option == 'r':
+                file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
+            elif option == 'e':
+                sys.exit()
+
+
     def binlink(program_internal_name):
-        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory? [y/N]?', ['y', 'n'], 'n')
+        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
         while yn == 'y':
             files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
             print(' '.join(files))
             file_chosen = 'Cool fact. This line was originally written on line 163.'
             while file_chosen not in files:
                 file_chosen = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
-            vprint("Adding alias to hamstall database")
-            file.add_line(file_chosen + ' # ' + program_internal_name + '\n', '~/.hamstall/database') #Files in ext4 can't have a / in them (because directories) so we can exploit that here
             line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/') + program_internal_name + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
             vprint("Adding alias to bashrc")
             file.add_line(line_to_add, "~/.hamstall/.bashrc")
             yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
         else:
-            sys.exit()
+            return
 
     def pathify(program_internal_name):
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
@@ -368,6 +388,7 @@ group.add_argument('-f', "--first", help="Run first time setup", action="store_t
 group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
 group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
 group.add_argument('-u', '--update', help="Update hamstall if an update is available", action="store_true")
+group.add_argument('-m', '--manage', help="Manage an installed program")
 args = parser.parse_args() #Parser stuff
 
 username = getpass.getuser()
@@ -422,6 +443,13 @@ elif args.remove != None:
         hamstall.uninstall(to_uninstall) #Uninstall program
     else:
         print("Program does not exist!") #Program doesn't exist
+    sys.exit()
+
+elif args.manage != None:
+    if file.check_line(args.manage, '~/.hamstall/database', 'word'):
+        hamstall.manage(args.manage)
+    else:
+        print("Program does not exist!")
     sys.exit()
 
 elif args.list:

@@ -190,8 +190,7 @@ class hamstall:
 
 
     def binlink(program_internal_name):
-        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
-        while yn == 'y':
+        while True:
             files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
             print(' '.join(files))
             file_chosen = 'Cool fact. This line was originally written on line 163.'
@@ -201,15 +200,13 @@ class hamstall:
             vprint("Adding alias to bashrc")
             file.add_line(line_to_add, "~/.hamstall/.bashrc")
             yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
-        else:
-            return
+            if yn == 'n':
+                return
 
     def pathify(program_internal_name):
-        yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-        if yn == 'y':
-            vprint('Adding program to PATH')
-            line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-            file.add_line(line_to_write,"~/.hamstall/.bashrc")
+        vprint('Adding program to PATH')
+        line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
+        file.add_line(line_to_write,"~/.hamstall/.bashrc")
         return
 
     def update():
@@ -333,8 +330,12 @@ class hamstall:
         move(source,dest)
         vprint("Adding program to hamstall list of programs")
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
-        hamstall.pathify(program_internal_name)
-        hamstall.binlink(program_internal_name)
+        yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
+        if yn == 'y':
+            hamstall.pathify(program_internal_name)
+        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
+        if yn == 'y':
+            hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()
     
@@ -344,11 +345,11 @@ class hamstall:
         vprint("Adding program to hamstall list of programs")
         file.add_line(program_internal_name + '\n',"~/.hamstall/database")
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-        if yn == y:
-            vprint("Adding program to PATH")
-            line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-            file.add_line(line_to_write, "~/.hamstall/.bashrc")
-        hamstall.binlink(program_internal_name)
+        if yn == 'y':
+            hamstall.pathify(program_internal_name)
+        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
+        if yn == 'y':
+            hamstall.binlink(program_internal_name)
         print("Install completed!")
         sys.exit()
 

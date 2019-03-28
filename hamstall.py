@@ -22,7 +22,7 @@ except:
 ###HAMSTALL VERSIONS###
 prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
-version = "1.0.0 beta 3" #String in case I ever decide to add letters. Will only be displayed to end users.
+version = "1.0.0 beta 4" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 
 def get_input(question, options, default): #Like input but with some checking
@@ -396,6 +396,12 @@ username = getpass.getuser()
 if username == 'root':
     print('Note: Running as root user will install programs for the root user to use!')
 
+if not(file.exists('~/.hamstall/hamstall.py')):
+    yn = get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
+    if yn == 'y':
+        hamstall.firstTimeSetup()
+    sys.exit()
+
 if args.install != None:
     to_install = args.install #to_install from the argument
     does_archive_exist = file.exists(to_install)
@@ -483,9 +489,4 @@ else:
     print("Written by: hammy3502\n")
     print('hamstall version: ' + version)
     print('Internal version code: ' + str(file_version) + "." + str(prog_version_internal) + "\n")
-    if file.exists('~/.hamstall/hamstall.py'):
-        print('For help, type hamstall -h\n')
-    else:
-        yn = get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
-        if yn == 'y':
-            hamstall.firstTimeSetup()
+    print('For help, type hamstall -h\n') 

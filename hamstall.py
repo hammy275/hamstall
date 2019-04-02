@@ -24,7 +24,7 @@ prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
 version = "1.0.0 beta 4" #String in case I ever decide to add letters. Will only be displayed to end users.
 
-
+#"Generic" functions
 def get_input(question, options, default): #Like input but with some checking
     answer = "This is a string. There are many others like it, but this one is mine." #Set answer to something
     while answer not in options and answer != "":
@@ -39,6 +39,7 @@ def vprint(to_print): #If we're verbose, print the supplied message
     global verbose
     if verbose:
         print(to_print)
+
 
 class config:
     def readConfig(key): #Read a specified value in the config.
@@ -70,6 +71,7 @@ class config:
     def vcheck():
         return(config.readConfig('Verbose'))
 
+
 class file:
     def name(program): #Get name of program as it's stored
         program_internal_name = re.sub(r'.*/', '/', program) #Remove a lot of stuff (I'm going to pretend I know how re.sub works, but this gives you "/filename.extension"
@@ -88,10 +90,11 @@ class file:
             return os.path.isfile(file.full(file_name)) #Returns True if the given file exists. Otherwise false.
         except FileNotFoundError:
             return False
+
     def full(file_name):
         return os.path.expanduser(file_name) #Returns path specified with ~ corrected to /home/USERNAME
     
-    def spaceify(file_name): #Adds \ before every space (for command purposes)
+    def spaceify(file_name): #Adds \ before every space because bash doesn't like spaces in file names
         char_list = []
         for c in file_name:
             if c == ' ':
@@ -106,32 +109,26 @@ class file:
         f = open(file.full(file_path), 'r')
         open_file = f.readlines()
         f.close()
-        line_num = 0
         for l in open_file:
             if mode == 'word':
                 new_l = l.rstrip()
-                new_l = new_l.split()
+                new_l = new_l.split() #Turns each line into a list of "words" (groups of characters seperated by spaces)
             elif mode == 'fuzzy':
-                new_l = l.rstrip()
+                new_l = l.rstrip() #Removes \n from each line
             if line in new_l:
                 return True
-            else:
-                line_num += 1
         return False
         
-
     def create(file_path):
         f=open(file.full(file_path), "w+")
         f.close() #Creates a file
 
     def remove_line(line, file_path, mode): #Removes a line from a file
+        rewrite = ''''''
         file_path = file.full(file_path)
         f = open(file_path, 'r') #Open file
         open_file = f.readlines() #Copy file to program
         f.close() #Close file
-
-        rewrite = ''''''
-
         for l in open_file:
             if mode == 'word' or mode == 'poundword':
                 new_l = l.rstrip()
@@ -170,10 +167,10 @@ class hamstall:
     def manage(program):
         while True:
             print("Enter an option to manage " + program + ":")
-            print("b - Create binlinks")
-            print("p - Add program to PATH")
-            print("u - Uninstall program")
-            print("r - Remove all binlinks + PATHs for program")
+            print("b - Create binlinks for " + program)
+            print("p - Add " + program + " to PATH")
+            print("u - Uninstall " + program)
+            print("r - Remove all binlinks + PATHs for " + program)
             print("E - Exit program management")
             option = get_input("[b/p/u/r/E]", ['b','p','u','r','e'], 'e')
             if option == 'b':
@@ -188,17 +185,16 @@ class hamstall:
             elif option == 'e':
                 sys.exit()
 
-
     def binlink(program_internal_name):
         while True:
             files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
             print(' '.join(files))
             file_chosen = 'Cool fact. This line was originally written on line 163.'
-            while file_chosen not in files:
+            while file_chosen not in files: #Get file to binlink from user
                 file_chosen = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
             line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/') + program_internal_name + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
             vprint("Adding alias to bashrc")
-            file.add_line(line_to_add, "~/.hamstall/.bashrc")
+            file.add_line(line_to_add, "~/.hamstall/.bashrc") #Add an alias to bashrc to cd into the directory of the program and run the specified program
             yn = get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
             if yn == 'n':
                 return
@@ -221,25 +217,24 @@ class hamstall:
                 spot = counter + 1
             else:
                 counter += 1
-        final_version = int(version[spot:])
+        final_version = int(version[spot:]) #Get current internal program version from repo
         vprint('Installed internal version: ' + str(prog_version_internal))
         vprint('Version on GitHub: ' + str(final_version))
         if final_version > prog_version_internal:
             print("An update has been found! Installing...")
             vprint("Downloading new hamstall...")
-            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/hamstall.py")
+            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/hamstall.py") #Download new hamstall
             vprint("Replacing old hamstall with new version")
             os.remove(file.full("~/.hamstall/hamstall.py"))
-            os.remove(file.full("~/.hamstall/version"))
+            os.remove(file.full("~/.hamstall/version")) #Remove old version and hamstall files
             open(file.full("~/.hamstall/hamstall.py"), 'wb').write(r.content)
-            open(file.full('~/.hamstall/version'), 'wb').write(version_raw.content)
+            open(file.full('~/.hamstall/version'), 'wb').write(version_raw.content) #Write new files
             ###hamstall directory conversion code here when needed###
             sys.exit()
         else:
             print("No update found!")
             sys.exit()
         
-
     def erase():
         if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
             print("hamstall not detected so not removed!")
@@ -264,14 +259,14 @@ class hamstall:
         os.mkdir(file.full("~/.hamstall/bin"))
         file.create("~/.hamstall/database")
         file.create("~/.hamstall/config")
-        file.create("~/.hamstall/.bashrc")
+        file.create("~/.hamstall/.bashrc") #Create directories and files
         file.add_line("Verbose=False\n","~/.hamstall/config") #Write verbosity line to config
         hamstall_file = os.path.realpath(__file__)
         copyfile(hamstall_file, file.full('~/.hamstall/hamstall.py')) #Copy hamstall to hamstall directory
         version_file = hamstall_file[0:len(hamstall_file) - 11] + 'version'
         copyfile(version_file, file.full('~/.hamstall/version'))
         file.add_line("source ~/.hamstall/.bashrc", "~/.bashrc")
-        file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")
+        file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc") #Add bashrc related lines
         print('First time setup complete!')
         print('Please run the command "source ~/.bashrc" or restart your terminal.')
         print('Afterwards, you may begin using hamstall with the hamstall command!')
@@ -341,9 +336,9 @@ class hamstall:
     
     def dirinstall(program_path, program_internal_name):
         vprint("Moving folder to hamstall destination")
-        move(program_path, file.full("~/.hamstall/bin/"))
+        move(program_path, file.full("~/.hamstall/bin/")) #Move program to install directory
         vprint("Adding program to hamstall list of programs")
-        file.add_line(program_internal_name + '\n',"~/.hamstall/database")
+        file.add_line(program_internal_name + '\n',"~/.hamstall/database") #Add program to hamstall database
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
         if yn == 'y':
             hamstall.pathify(program_internal_name)
@@ -396,10 +391,12 @@ username = getpass.getuser()
 if username == 'root':
     print('Note: Running as root user will install programs for the root user to use!')
 
-if not(file.exists('~/.hamstall/hamstall.py')):
+if not(file.exists('~/.hamstall/hamstall.py')): #hamstall must be installed before doing anything else
     yn = get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
     if yn == 'y':
         hamstall.firstTimeSetup()
+    else:
+        print('hamstall not installed.')
     sys.exit()
 
 if args.install != None:
@@ -485,7 +482,7 @@ elif args.update:
 
 else:
     #About hamstall
-    print('\nhamstall. A Python package manager to manage archives.')
+    print('\nhamstall. A Python based package manager to manage archives.')
     print("Written by: hammy3502\n")
     print('hamstall version: ' + version)
     print('Internal version code: ' + str(file_version) + "." + str(prog_version_internal) + "\n")

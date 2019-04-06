@@ -22,7 +22,7 @@ except:
 ###HAMSTALL VERSIONS###
 prog_version_internal = 1
 file_version = 1 #These are used internally for updating and for converting older hamstalls up.
-version = "1.0.0 beta 4" #String in case I ever decide to add letters. Will only be displayed to end users.
+version = "1.0.0" #String in case I ever decide to add letters. Will only be displayed to end users.
 
 #"Generic" functions
 def get_input(question, options, default): #Like input but with some checking
@@ -328,7 +328,7 @@ class hamstall:
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
         if yn == 'y':
             hamstall.pathify(program_internal_name)
-        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
+        yn = get_input('Would you like to be able to create a binlink? [y/N]', ['y', 'n'], 'n')
         if yn == 'y':
             hamstall.binlink(program_internal_name)
         print("Install completed!")
@@ -342,7 +342,7 @@ class hamstall:
         yn = get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
         if yn == 'y':
             hamstall.pathify(program_internal_name)
-        yn = get_input('Would you like to be able to run certain files in the installed archive directly from its directory (create a binlink)? [y/N]?', ['y', 'n'], 'n')
+        yn = get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
         if yn == 'y':
             hamstall.binlink(program_internal_name)
         print("Install completed!")

@@ -1,19 +1,19 @@
-import file
 import re
 import sys
 import os
 from shutil import copyfile, rmtree, move
-import config
-import generic
 try:
     import requests
 except:
     print('Please install requests! The command "pip3 install requests" or "python3 -m pip install requests" on Linux systems should do the job!')
     sys.exit()
 
-
+import file
+import config
+import generic
 
 def manage(program):
+    """Manage an already installed program"""
     while True:
         print("Enter an option to manage " + program + ":")
         print("b - Create binlinks for " + program)
@@ -30,11 +30,12 @@ def manage(program):
             uninstall(program)
             sys.exit()
         elif option == 'r':
-            file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
+            file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
         elif option == 'e':
             sys.exit()
 
 def binlink(program_internal_name):
+    """Creates an alias to run a program from its directory"""
     while True:
         files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
         print(' '.join(files))
@@ -49,13 +50,15 @@ def binlink(program_internal_name):
             return
 
 def pathify(program_internal_name):
+    """Adds an installed program to PATH"""
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
     file.add_line(line_to_write,"~/.hamstall/.bashrc")
     return
 
 def update():
-    prog_version_internal = hamstall.get_version('prog_internal_version')
+    """Update hamstall after checking for updates"""
+    prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
     final_version = get_online_version('prog')
     config.vprint('Installed internal version: ' + str(prog_version_internal))
@@ -77,6 +80,7 @@ def update():
         sys.exit()
     
 def erase():
+    """Remove hamstall"""
     if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
         print("hamstall not detected so not removed!")
         sys.exit()
@@ -87,8 +91,10 @@ def erase():
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
     input('Press return to exit...')
+    sys.exit()
 
-def firstTimeSetup():
+def first_time_setup():
+    """Create hamstall files in ~/.hamstall"""
     if file.exists(file.full('~/.hamstall/hamstall.py')):
         print('Please don\'t run first time setup on an already installed system!')
         sys.exit()
@@ -108,17 +114,19 @@ def firstTimeSetup():
             copyfile(i, file.full('~/.hamstall/') + i)
     version_file = hamstall_file[0:len(hamstall_file) - 14] + 'version'
     copyfile(version_file, file.full('~/.hamstall/version'))
-    file.add_line("source ~/.hamstall/.bashrc", "~/.bashrc")
-    file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc") #Add bashrc related lines
+    file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")
+    file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc") #Add bashrc line
     print('First time setup complete!')
     print('Please run the command "source ~/.bashrc" or restart your terminal.')
     print('Afterwards, you may begin using hamstall with the hamstall command!')
     sys.exit()
 
-def verboseToggle():
-    config.changeConfig('Verbose')
+def verbose_toggle():
+    """Toggle verbose mode"""
+    config.change_config('Verbose')
 
 def install(program):
+    """Install an archive"""
     program_internal_name = file.name(program)
     if file.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
@@ -133,7 +141,7 @@ def install(program):
     config.vprint("Extracting archive to temp directory")
     file_extension = file.extension(program)
     program = file.spaceify(program)
-    if config.vcheck():
+    if config.vcheck(): #Creates the command to run to extract the archive
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             vflag = 'v'
         elif file_extension == '.zip':
@@ -149,7 +157,7 @@ def install(program):
         command_to_go = 'unzip ' + vflag + ' ' + program + ' -d ~/.hamstall/temp/'
     else:
         print('Error! File type not supported!')
-        sys.exit() #Creates the command to run to extract the archive
+        sys.exit()
     config.vprint('File type detected: ' + file_extension)
     os.system(command_to_go) #Extracts program archive
     config.vprint('Checking for folder in folder')
@@ -178,10 +186,11 @@ def install(program):
     sys.exit()
 
 def dirinstall(program_path, program_internal_name):
+    """Install a directory"""
     config.vprint("Moving folder to hamstall destination")
-    move(program_path, file.full("~/.hamstall/bin/")) #Move program to install directory
+    move(program_path, file.full("~/.hamstall/bin/"))
     config.vprint("Adding program to hamstall list of programs")
-    file.add_line(program_internal_name + '\n',"~/.hamstall/database") #Add program to hamstall database
+    file.add_line(program_internal_name + '\n',"~/.hamstall/database")
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -192,8 +201,9 @@ def dirinstall(program_path, program_internal_name):
     sys.exit()
 
 def uninstall(program):
+    """Uninstall a program"""
     config.vprint("Removing program")
-    rmtree(file.full("~/.hamstall/bin/" + program + '/')) #Removes program
+    rmtree(file.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH")
     file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
     config.vprint("Removing program from hamstall list of programs")
@@ -201,7 +211,8 @@ def uninstall(program):
     print("Uninstall complete!")
     return
 
-def listPrograms():
+def list_programs():
+    """List all installed programs"""
     f = open(file.full('~/.hamstall/database'), 'r')
     open_file = f.readlines()
     f.close()
@@ -211,6 +222,9 @@ def listPrograms():
     sys.exit()
 
 def get_online_version(type):
+    """Get current version of hamstall through GitHub
+    prog - Program version
+    file - .hamstall folder version"""
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
     version_raw = requests.get(version_url)
     version = version_raw.text
@@ -226,6 +240,9 @@ def get_online_version(type):
             counter += 1
 
 def get_file_version(type):
+    """Get current version of hamstall from version file
+    prog - Program version
+    file - .hamstall folder version"""
     f = open(file.full('~/.hamstall/version'), 'r')
     version = f.readlines()
     version = ''.join(version)
@@ -242,8 +259,9 @@ def get_file_version(type):
             counter += 1
 
 def download_files(files, dir):
+    """Downloads a list of files and writes them"""
     for i in files:
-        r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/" + i) #Download new hamstall pys
+        r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/" + i)
         open(file.full(dir + i), 'wb').write(r.content)
 
 verbose = config.vcheck()

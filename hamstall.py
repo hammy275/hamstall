@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-#Hamstall
-#A package manager for managing archives
-#Written by hammy3502
+"""Hamstall
+A package manager for managing archives
+Written by hammy3502"""
 
 import os
 import argparse
@@ -10,23 +10,13 @@ from pathlib import Path
 import sys
 import re
 import getpass
+
 import file
 import generic
 import prog_manage
+import config
 
-###HAMSTALL VERSIONS###
-
-def get_version(type):
-    if type == 'prog_internal_version':
-        return 2
-    elif type == 'file_version':
-        return 1
-    elif type == 'version':
-        return '1.0.0b'
-
-
-###############Argument Parsing###############
-
+"""Argument parsing"""
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-i', "--install", help="Install a .tar.gz, .tar.xz, or .zip")
@@ -44,16 +34,17 @@ username = getpass.getuser()
 if username == 'root':
     print('Note: Running as root user will install programs for the root user to use!')
 
-if not(file.exists('~/.hamstall/hamstall.py')): #hamstall must be installed before doing anything else
+if not(file.exists('~/.hamstall/hamstall.py')):
+    """Install hamstall if it doesn't exist"""
     yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
     if yn == 'y':
-        prog_manage.firstTimeSetup()
+        prog_manage.first_time_setup()
     else:
         print('hamstall not installed.')
     sys.exit()
 
 file_version = prog_manage.get_file_version('file')
-if get_version('file_version') > file_version:
+if config.get_version('file_version') > file_version:
     ##hamstall directory conversion code here##
     sys.exit()
 
@@ -61,53 +52,48 @@ if prog_manage.get_file_version('prog') == 1:
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
     sys.exit()
 
-
 if args.install != None:
-    to_install = args.install #to_install from the argument
-    does_archive_exist = file.exists(to_install)
+    does_archive_exist = file.exists(args.install)
     if does_archive_exist == False:
         print("File to install does not exist!")
         sys.exit()
-    program_internal_name = file.name(to_install) #Get the internal name (trim off everything except the file name before the .tar.gz/.tar.xz/.zip
-    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') #Checks to see if the file path for the program's uninstall script exists
-    if file_check: #Ask to reinstall program
+    program_internal_name = file.name(args.install) #Get the program name
+    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
+    if file_check: #Reinstall check
         reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n") #Ask to reinstall
         if reinstall == "y":
             prog_manage.uninstall(program_internal_name)
-            prog_manage.install(to_install) #Reinstall
+            prog_manage.install(args.install) #Reinstall
         else:
             print("Reinstall cancelled.")
             sys.exit()
     else:
-        prog_manage.install(to_install) #No reinstall needed to be asked, install program
+        prog_manage.install(args.install) #No reinstall needed to be asked, install program
 
 if args.dirinstall != None:
-    to_install = args.dirinstall
-    if os.path.isdir(to_install) == False:
+    if os.path.isdir(args.dirinstall) == False:
         print("Folder to install does not exist!")
         sys.exit()
-    if to_install[len(to_install) - 1] != '/':
+    if args.dirinstall[len(args.dirinstall) - 1] != '/':
         print("Please make sure the directory ends with a / !")
         sys.exit()
-    progintnametemp = to_install[0:len(to_install)-1]
-    program_internal_name = file.name(progintnametemp + '.tar.gz') #Add .tar.gz to make the original function work (a hackey solution I know)
+    prog_int_name_temp = args.dirinstall[0:len(args.dirinstall)-1]
+    program_internal_name = file.name(prog_int_name_temp + '.tar.gz') #Add .tar.gz to make the original function work (a hackey solution I know)
     file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word')
     if file_check:
         reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n")
         if reinstall == 'y':
             prog_manage.uninstall(program_internal_name)
-            prog_manage.dirinstall(to_install, program_internal_name)
+            prog_manage.dirinstall(args.dirinstall, program_internal_name)
         else:
             print("Reinstall cancelled.")
             sys.exit()
     else:
-        prog_manage.dirinstall(to_install, program_internal_name)
-
+        prog_manage.dirinstall(args.dirinstall, program_internal_name)
 
 elif args.remove != None:
-    to_uninstall = args.remove
-    if file.check_line(to_uninstall, "~/.hamstall/database", 'word'): #If uninstall script exists
-        prog_manage.uninstall(to_uninstall) #Uninstall program
+    if file.check_line(args.remove, "~/.hamstall/database", 'word'): #If uninstall script exists
+        prog_manage.uninstall(args.remove) #Uninstall program
     else:
         print("Program does not exist!") #Program doesn't exist
     sys.exit()
@@ -120,10 +106,10 @@ elif args.manage != None:
     sys.exit()
 
 elif args.list:
-    prog_manage.listPrograms() #List programs installed
+    prog_manage.list_programs() #List programs installed
 
 elif args.first:
-    prog_manage.firstTimeSetup() #First time setup
+    prog_manage.first_time_setup() #First time setup
 
 elif args.erase:
     erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]", ['y', 'n'], 'n')
@@ -138,7 +124,7 @@ elif args.erase:
     sys.exit()
 
 elif args.verbose: #Verbose toggle
-    prog_manage.verboseToggle()
+    prog_manage.verbose_toggle()
 
 elif args.update:
     prog_manage.update()
@@ -147,6 +133,6 @@ else:
     #About hamstall
     print('\nhamstall. A Python based package manager to manage archives.')
     print("Written by: hammy3502\n")
-    print('hamstall version: ' + get_version('version'))
-    print('Internal version code: ' + str(get_version('file_version')) + "." + str(get_version('prog_internal_version')) + "\n")
+    print('hamstall version: ' + config.get_version('version'))
+    print('Internal version code: ' + str(config.get_version('file_version')) + "." + str(config.get_version('prog_internal_version')) + "\n")
     print('For help, type hamstall -h\n') 

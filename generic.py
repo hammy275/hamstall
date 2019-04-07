@@ -1,4 +1,6 @@
-def get_input(question, options, default): #Like input but with some checking
+def get_input(question, options, default):
+    """input() but supports a default answer and
+    makes sure input is acceptable"""
     answer = "This is a string. There are many others like it, but this one is mine." #Set answer to something
     while answer not in options and answer != "":
         answer = input(question)

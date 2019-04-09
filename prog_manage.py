@@ -1,3 +1,19 @@
+"""hamstall: A package manager for managing archives
+    Copyright (C) 2019  hammy3502
+
+    hamstall is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    hamstall is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+
 import re
 import sys
 import os
@@ -100,7 +116,7 @@ def first_time_setup():
         sys.exit()
     print('Installing hamstall to your system...')
     os.mkdir(file.full("~/.hamstall"))
-    os.mkdir(file.full("~/.hamstall/temp"))
+    os.mkdir(file.full("/tmp/hamstall-temp/"))
     os.mkdir(file.full("~/.hamstall/bin"))
     file.create("~/.hamstall/database")
     file.create("~/.hamstall/config")
@@ -133,11 +149,11 @@ def install(program):
         sys.exit()
     config.vprint("Removing old temp directory (if it exists!)")
     try:
-        rmtree(file.full("~/.hamstall/temp/")) #Removes temp directory (used during installs)
+        rmtree(file.full("/tmp/hamstall-temp")) #Removes temp directory (used during installs)
     except:
         config.vprint("Temp directory did not exist!")
     config.vprint("Creating new temp directory")
-    os.mkdir(file.full("~/.hamstall/temp")) #Creates temp directory for extracting archive
+    os.mkdir(file.full("/tmp/hamstall-temp")) #Creates temp directory for extracting archive
     config.vprint("Extracting archive to temp directory")
     file_extension = file.extension(program)
     program = file.spaceify(program)
@@ -152,26 +168,23 @@ def install(program):
         elif file_extension == '.zip':
             vflag = '-qq'
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
-        command_to_go = "tar " + vflag + "xf " + program + " -C ~/.hamstall/temp/"
+        command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
     elif file_extension == '.zip':
-        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d ~/.hamstall/temp/'
+        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
     else:
         print('Error! File type not supported!')
         sys.exit()
     config.vprint('File type detected: ' + file_extension)
     os.system(command_to_go) #Extracts program archive
     config.vprint('Checking for folder in folder')
-    if os.path.isdir(file.full('~/.hamstall/temp/' + program_internal_name + '/')):
+    if os.path.isdir(file.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
-        source = file.full('~/.hamstall/temp/' + program_internal_name + '/')
+        source = file.full('/tmp/hamstall-temp/' + program_internal_name + '/')
         dest = file.full('~/.hamstall/bin/')
     else:
         config.vprint('Folder in folder not detected!')
-        source_r = file.full("~/.hamstall/temp")
-        dest_r = file.full("~/.hamstall/" + program_internal_name)
-        os.rename(source_r, dest_r) #Renames temp folder to program name before move
-        source = file.full('~/.hamstall/' + program_internal_name)
-        dest = file.full('~/.hamstall/bin/')
+        source = file.full('/tmp/hamstall-temp')
+        dest = file.full('~/.hamstall/bin/' + program_internal_name)
     config.vprint("Moving program to directory")
     move(source,dest)
     config.vprint("Adding program to hamstall list of programs")
@@ -182,6 +195,11 @@ def install(program):
     yn = generic.get_input('Would you like to be able to create a binlink? [y/N]', ['y', 'n'], 'n')
     if yn == 'y':
         binlink(program_internal_name)
+    config.vprint('Removing old temp directory...')
+    try:
+        rmtree(file.full("/tmp/hamstall-temp"))
+    except:
+        config.vprint('Temp folder not found so not deleted!')
     print("Install completed!")
     sys.exit()
 

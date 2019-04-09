@@ -1,3 +1,19 @@
+"""hamstall: A package manager for managing archives
+    Copyright (C) 2019  hammy3502
+
+    hamstall is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    hamstall is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+
 import re
 
 import file
@@ -51,10 +67,10 @@ def get_version(type):
     version - Version displayed to end user.
     """
     if type == 'prog_internal_version':
-        return 3
+        return 4
     elif type == 'file_version':
         return 1
     elif type == 'version':
-        return '1.0.0c'
+        return '1.0.1'
 
 verbose = vcheck()

@@ -36,8 +36,9 @@ def manage(program):
         print("p - Add " + program + " to PATH")
         print("u - Uninstall " + program)
         print("r - Remove all binlinks + PATHs for " + program)
+        print("c - Run a command inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/E]", ['b','p','u','r','e'], 'e')
+        option = generic.get_input("[b/p/u/r/E]", ['b','p','u','r','c','e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -47,6 +48,8 @@ def manage(program):
             sys.exit()
         elif option == 'r':
             file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+        elif option == 'c':
+            command(program)
         elif option == 'e':
             sys.exit()
 
@@ -70,6 +73,14 @@ def pathify(program_internal_name):
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
     file.add_line(line_to_write,"~/.hamstall/.bashrc")
+    return
+
+def command(program):
+    run = 'y'
+    while run == 'y':
+        command = input('Please enter a command: ')
+        os.system("cd ~/.hamstall/bin/" + program + "/ && " + command)
+        run = generic.get_input('Would you like to run another command? [y/N]', ['y', 'n'], 'n')
     return
 
 def update():
@@ -139,7 +150,7 @@ def first_time_setup():
 
 def verbose_toggle():
     """Toggle verbose mode"""
-    config.change_config('Verbose')
+    config.change_config('Verbose', 'flip', 'N/A')
 
 def install(program):
     """Install an archive"""

@@ -42,13 +42,17 @@ def read_config(key):
         else:
             line_num += 1
 
-def change_config(key):
+def change_config(key, mode, value):
     """Flips a value in the config between true and false"""
     original = read_config(key)
-    to_remove = key + '=' + str(original)
-    to_add = key + '=' + str(not(original)) + '\n'
-    file.remove_line(to_remove, "~/.hamstall/config", 'fuzzy')
-    file.add_line(to_add, '~/.hamstall/config')
+    if mode == 'flip':
+        to_remove = key + '=' + str(original)
+        to_add = key + '=' + str(not(original)) + '\n'
+        file.remove_line(to_remove, "~/.hamstall/config", 'fuzzy')
+        file.add_line(to_add, '~/.hamstall/config')
+    elif mode == 'change':
+        file.remove_line(key, "~/.hamstall.config", 'fuzzy')
+        file.add_line(key + '=' + value, "~/.hamstall/config")
 
 def vcheck():
     """Returns if Verbose=True in the config"""

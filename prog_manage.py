@@ -37,8 +37,9 @@ def manage(program):
         print("u - Uninstall " + program)
         print("r - Remove all binlinks + PATHs for " + program)
         print("c - Run a command inside " + program + "'s directory")
+        print("s - Launch a shell inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/E]", ['b','p','u','r','c','e'], 'e')
+        option = generic.get_input("[b/p/u/r/c/s/E]", ['b','p','u','r','c','s','e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -50,6 +51,10 @@ def manage(program):
             file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
         elif option == 'c':
             command(program)
+        elif option == 's':
+            print("When you exit the shell, you will be returned to here.")
+            os.chdir(file.full("~/.hamstall/bin/" + program + "/"))
+            os.system("/bin/bash")
         elif option == 'e':
             sys.exit()
 

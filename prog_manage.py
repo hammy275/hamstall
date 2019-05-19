@@ -120,6 +120,10 @@ def erase():
     file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
     config.vprint('Removing hamstall directory')
     rmtree(file.full('~/.hamstall'))
+    try:
+        rmtree("/tmp/hamstall-temp")
+    except:
+        pass
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
     input('Press return to exit...')
@@ -178,15 +182,27 @@ def install(program):
             vflag = 'v'
         elif file_extension == '.zip':
             vflag = ''
+        elif file_extension == '.7z':
+            vflag = ''
+        elif file_extension == '.rar':
+            vflag = ''
     else:
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             vflag = ''
         elif file_extension == '.zip':
             vflag = '-qq'
+        elif file_extension == '.7z':
+            vflag = '-bb0 -bso0 -bd '
+        elif file_extension == '.rar':
+            vflag = '-idcdpq '
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
         command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
     elif file_extension == '.zip':
         command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
+    elif file_extension == '.7z':
+        command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
+    elif file_extension == '.rar':
+        command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
     else:
         print('Error! File type not supported!')
         sys.exit()

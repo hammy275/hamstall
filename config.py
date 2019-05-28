@@ -42,6 +42,7 @@ def read_config(key):
         else:
             line_num += 1
 
+
 def change_config(key, mode, value):
     """Flips a value in the config between true and false"""
     original = read_config(key)
@@ -54,9 +55,11 @@ def change_config(key, mode, value):
         file.remove_line(key, "~/.hamstall.config", 'fuzzy')
         file.add_line(key + '=' + value, "~/.hamstall/config")
 
+
 def vcheck():
     """Returns if Verbose=True in the config"""
-    return(read_config('Verbose'))
+    return read_config('Verbose')
+
 
 def vprint(to_print):
     """Print a message only if Verbose=True"""
@@ -64,17 +67,19 @@ def vprint(to_print):
     if verbose:
         print(to_print)
 
-def get_version(type):
+
+def get_version(version_type):
     """Return version numbers of scripts
     prog_internal_version - Version as used by GitHub for updating
     file_version - Version that should match with the .hamstall directory
     version - Version displayed to end user.
     """
-    if type == 'prog_internal_version':
+    if version_type == 'prog_internal_version':
         return 4
-    elif type == 'file_version':
+    elif version_type == 'file_version':
         return 1
-    elif type == 'version':
+    elif version_type == 'version':
         return '1.0.1'
+
 
 verbose = vcheck()

@@ -25,6 +25,7 @@ def name(program):
     program_internal_name = program_internal_name[1:(len(program_internal_name)-extension_length)]
     return program_internal_name
 
+
 def extension(program):
     """Returns program extension"""
     if program[((len(program))-3):len(program)].lower() == '.7z':
@@ -35,6 +36,7 @@ def extension(program):
         # Returns the last 7 characters of the provided file name.
         return program[((len(program))-7):len(program)]
 
+
 def exists(file_name):
     """Returns if file exists"""
     try:
@@ -42,9 +44,11 @@ def exists(file_name):
     except FileNotFoundError:
         return False
 
+
 def full(file_name):
     """Returns program with corrected ~ to /home/user"""
     return os.path.expanduser(file_name)
+
 
 def spaceify(file_name):
     """Adds a backslash before every space for bash"""
@@ -57,6 +61,7 @@ def spaceify(file_name):
     for i in char_list:
         return_string = return_string + i
     return return_string
+
 
 def check_line(line, file_path, mode):
     """Returns if a line exists in a file
@@ -76,10 +81,12 @@ def check_line(line, file_path, mode):
             return True
     return False
 
+
 def create(file_path):
     """Creates an empty file"""
     f = open(full(file_path), "w+")
     f.close()
+
 
 def remove_line(line, file_path, mode):
     """Removes a line from a file
@@ -110,6 +117,7 @@ def remove_line(line, file_path, mode):
     written.close()  # Write then close our new copy of the file
     return
 
+
 def add_line(line, file_path):
     """Adds a line to a file"""
     file_path = full(file_path)
@@ -117,6 +125,7 @@ def add_line(line, file_path):
     f.write(line)
     f.close()
     return
+
 
 def char_check(name):
     """Returns if the provided string contains a space or #"""

@@ -75,11 +75,11 @@ def get_version(version_type):
     version - Version displayed to end user.
     """
     if version_type == 'prog_internal_version':
-        return 4
+        return 5
     elif version_type == 'file_version':
         return 1
     elif version_type == 'version':
-        return '1.0.1'
+        return '1.1.0'
 
 
 verbose = vcheck()

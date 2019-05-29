@@ -19,10 +19,14 @@ import os
 from shutil import copyfile, rmtree, move
 try:
     import requests
+    can_update = True
 except ImportError:
-    print('Please install requests! The command "pip3 install requests"'
-          ' or "python3 -m pip install requests" on Linux systems should do the job!')
-    sys.exit()
+    can_update = False
+    print("##########WARNING##########")
+    print("requests library not installed! Ability to update hamstall")
+    print("has been disabled! Use `pip3 install requests` or ")
+    print("`python3 -m pip install requests` on Linux systems to install it!")
+    print("###########################")
 
 import file
 import config
@@ -94,6 +98,10 @@ def command(program):
 
 
 def update():
+    global can_update
+    if not(can_update):
+        print("requests not found! Can't update!")
+        sys.exit(1)
     """Update hamstall after checking for updates"""
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
@@ -174,7 +182,7 @@ def install(program):
     program_internal_name = file.name(program)
     if file.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
-        sys.exit()
+        sys.exit(1)
     config.vprint("Removing old temp directory (if it exists!)")
     try:
         rmtree(file.full("/tmp/hamstall-temp"))  #Removes temp directory (used during installs)
@@ -213,9 +221,14 @@ def install(program):
         command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
     else:
         print('Error! File type not supported!')
-        sys.exit()
+        sys.exit(1)
     config.vprint('File type detected: ' + file_extension)
-    os.system(command_to_go)  #Extracts program archive
+    try:
+        os.system(command_to_go)  #Extracts program archive
+    except:
+        print('Failed to run command: ' + command_to_go + "!")
+        print("Program installation halted!")
+        sys.exit(1)
     config.vprint('Checking for folder in folder')
     if os.path.isdir(file.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
@@ -284,9 +297,13 @@ def list_programs():
 
 
 def get_online_version(type_of_replacement):
+    global can_update
     """Get current version of hamstall through GitHub
     prog - Program version
     file - .hamstall folder version"""
+    if not(can_update):
+        print("requests library not installed! Exiting...")
+        sys.exit(1)
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
     version_raw = requests.get(version_url)
     version = version_raw.text
@@ -324,6 +341,10 @@ def get_file_version(type_of_replacement):
 
 def download_files(files, folder):
     """Downloads a list of files and writes them"""
+    global can_update
+    if not(can_update):
+        print("Cannot download files if the request library isn't installed!")
+        sys.exit(1)
     for i in files:
         r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/" + i)
         open(file.full(folder + i), 'wb').write(r.content)

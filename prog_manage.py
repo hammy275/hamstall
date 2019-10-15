@@ -72,7 +72,7 @@ def binlink(program_internal_name):
         file_chosen = 'Cool fact. This line was originally written on line 163.'
         while file_chosen not in files:  #Get file to binlink from user
             file_chosen = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
-        line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/') + program_internal_name + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
+        line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/' + program_internal_name) + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
         config.vprint("Adding alias to bashrc")
         file.add_line(line_to_add, "~/.hamstall/.bashrc")
         yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
@@ -115,7 +115,7 @@ def update():
         for i in files:
             i_num = len(i) - 3
             if i[i_num:len(i)] == '.py':
-                os.remove( file.full('~/.hamstall/') + i)
+                os.remove(file.full('~/.hamstall/') + i)
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
         sys.exit()
@@ -139,18 +139,25 @@ def erase():
         pass
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
-    input('Press return to exit...')
     sys.exit()
 
 
-def first_time_setup():
+def first_time_setup(sym):
     """Create hamstall files in ~/.hamstall"""
     if file.exists(file.full('~/.hamstall/hamstall.py')):
         print('Please don\'t run first time setup on an already installed system!')
         sys.exit()
     print('Installing hamstall to your system...')
-    os.mkdir(file.full("~/.hamstall"))
-    os.mkdir(file.full("/tmp/hamstall-temp/"))
+    try:
+        os.mkdir(file.full("~/.hamstall"))
+    except FileExistsError:
+        rmtree(file.full("~/.hamstall"))
+        os.mkdir(file.full("~/.hamstall"))
+    try:
+        os.mkdir(file.full("/tmp/hamstall-temp/"))
+    except FileExistsError:
+        rmtree(file.full("/tmp/hamstall-temp"))
+        os.mkdir(file.full("/tmp/hamstall-temp/"))
     os.mkdir(file.full("~/.hamstall/bin"))
     file.create("~/.hamstall/database")
     file.create("~/.hamstall/config")
@@ -161,7 +168,14 @@ def first_time_setup():
     for i in files:
         i_num = len(i) - 3
         if i[i_num:len(i)] == '.py':
-            copyfile(i, file.full('~/.hamstall/') + i)
+            if sym:
+                os.symlink(os.getcwd() + "/" + i, file.full("~/.hamstall/" + i))
+            else:
+                try:
+                    copyfile(i, file.full('~/.hamstall/' + i))
+                except FileNotFoundError:
+                    print("A file is missing that was attempted to be copied! Install halted!")
+                    sys.exit(1)
     version_file = hamstall_file[0:len(hamstall_file) - 14] + 'version'
     copyfile(version_file, file.full('~/.hamstall/version'))
     file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")

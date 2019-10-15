@@ -50,9 +50,11 @@ if username == 'root':
 
 if not(file.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""
-    yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n'], 'y')
+    yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n','debug'], 'y')
     if yn == 'y':
-        prog_manage.first_time_setup()
+        prog_manage.first_time_setup(False)
+    elif yn == 'debug':
+        prog_manage.first_time_setup(True)
     else:
         print('hamstall not installed.')
     sys.exit()
@@ -62,7 +64,7 @@ if config.get_version('file_version') > file_version:
     ##hamstall directory conversion code here##
     sys.exit()
 
-if prog_manage.get_file_version('prog') == 1:
+if prog_manage.get_file_version('prog') == 1: #Online update broke between versions 1 and 2 of hamstall
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
     sys.exit()
 
@@ -123,7 +125,7 @@ elif args.list:
     prog_manage.list_programs()  #List programs installed
 
 elif args.first:
-    prog_manage.first_time_setup()  #First time setup
+    prog_manage.first_time_setup(False)  #First time setup
 
 elif args.erase:
     erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]", ['y', 'n'], 'n')
@@ -145,8 +147,13 @@ elif args.update:
 
 else:
     #About hamstall
-    print('\nhamstall. A Python based package manager to manage archives.')
-    print("Written by: hammy3502\n")
-    print('hamstall version: ' + config.get_version('version'))
-    print('Internal version code: ' + str(config.get_version('file_version')) + "." + str(config.get_version('prog_internal_version')) + "\n")
-    print('For help, type hamstall -h\n') 
+    print("""
+hamstall. A Python based package manager to manage archives.
+Written by: hammy3502
+
+hamstall Version: {user_version}
+Internal Version Code: {file_version}.{prog_version}
+
+For help, type "hamstall -h"
+    """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"), prog_version=config.get_version("prog_internal_version"))
+    )

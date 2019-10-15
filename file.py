@@ -47,7 +47,7 @@ def exists(file_name):
 
 def full(file_name):
     """Returns program with corrected ~ to /home/user"""
-    return os.path.expanduser(file_name)
+    return os.path.abspath(os.path.expanduser(file_name))
 
 
 def spaceify(file_name):

@@ -43,7 +43,7 @@ def read_config(key):
             line_num += 1
 
 
-def change_config(key, mode, value):
+def change_config(key, mode, value=None):
     """Flips a value in the config between true and false"""
     original = read_config(key)
     if mode == 'flip':

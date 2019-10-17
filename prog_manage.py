@@ -17,6 +17,7 @@
 import sys
 import os
 from shutil import copyfile, rmtree, move
+from subprocess import call
 try:
     import requests
     can_update = True
@@ -31,6 +32,28 @@ except ImportError:
 import file
 import config
 import generic
+
+def gitinstall(git_url, program_internal_name):
+    config.vprint("Checking for .git extension")
+    if file.extension(git_url) != ".git":
+        print("The URL must end in .git!")
+        sys.exit(1)
+    config.vprint("Downloading git repository")
+    os.chdir(file.full("~/.hamstall/bin"))
+    err = call(["git", "clone", git_url])
+    if err != 0:
+        print("Error detected! Install halted.")
+        sys.exit(1)
+    config.vprint("Adding program to hamstall list of programs")
+    file.add_line(program_internal_name + '\n',"~/.hamstall/database")
+    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
+    if yn == 'y':
+        pathify(program_internal_name)
+    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
+    if yn == 'y':
+        binlink(program_internal_name)
+    print("Install complete!")
+    sys.exit()
 
 
 def manage(program):

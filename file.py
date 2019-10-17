@@ -30,7 +30,7 @@ def extension(program):
     """Returns program extension"""
     if program[((len(program))-3):len(program)].lower() == '.7z':
         return program[((len(program))-3):len(program)].lower()
-    elif program[((len(program))-4):len(program)].lower() == '.zip' or program[((len(program))-4):len(program)].lower() == '.rar':
+    elif program[((len(program))-4):len(program)].lower() in ['.zip', '.rar', '.git']:
         return program[((len(program))-4):len(program)]
     else:
         # Returns the last 7 characters of the provided file name.

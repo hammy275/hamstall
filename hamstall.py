@@ -24,6 +24,7 @@ import os
 import argparse
 import sys
 import getpass
+import shutil
 import file
 import generic
 import prog_manage
@@ -86,7 +87,26 @@ if args.install is not None:
     else:
         prog_manage.install(args.install)  #No reinstall needed to be asked, install program
 
-if args.dirinstall is not None:
+elif args.gitinstall is not None:
+    if shutil.which("git") is None:
+        print("git not installed! Please install it before using git install functionality!")
+        sys.exit()
+    else:
+        program_internal_name = file.name(args.gitinstall)
+        file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
+        if file_check:
+            reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n") #Ask to reinstall
+            if reinstall == "y":
+                prog_manage.uninstall(program_internal_name)
+                prog_manage.gitinstall(args.gitinstall, program_internal_name)
+            else:
+                print("Reinstall cancelled.")
+                sys.exit()
+        else:
+            prog_manage.gitinstall(args.gitinstall, program_internal_name)
+
+
+elif args.dirinstall is not None:
     if not(os.path.isdir(args.dirinstall)):
         print("Folder to install does not exist!")
         sys.exit()

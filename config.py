@@ -14,10 +14,18 @@
     You should have received a copy of the GNU General Public License
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
+###VERSIONS###
+
+version = "1.1.0"
+prog_internal_version = 5
+file_version = 1
+
+#############
+
 import re
+import os
 
 import file
-
 
 def read_config(key):
     """Gets the value stored in ~/.hamstall/config for the given key"""
@@ -75,11 +83,24 @@ def get_version(version_type):
     version - Version displayed to end user.
     """
     if version_type == 'prog_internal_version':
-        return 5
+        return prog_internal_version
     elif version_type == 'file_version':
-        return 1
+        return file_version
     elif version_type == 'version':
-        return '1.1.0'
+        return version
 
+def lock():
+    file.create("/tmp/hamstall-lock")
+    vprint("Lock created!")
+
+def unlock():
+    try:
+        os.remove(file.full("/tmp/hamstall-lock"))
+    except FileNotFoundError:
+        pass
+    vprint("Lock removed!")
+
+def locked():
+    return os.path.isfile(file.full("/tmp/hamstall-lock"))
 
 verbose = vcheck()

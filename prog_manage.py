@@ -37,13 +37,13 @@ def gitinstall(git_url, program_internal_name):
     config.vprint("Checking for .git extension")
     if file.extension(git_url) != ".git":
         print("The URL must end in .git!")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint("Downloading git repository")
     os.chdir(file.full("~/.hamstall/bin"))
     err = call(["git", "clone", git_url])
     if err != 0:
         print("Error detected! Install halted.")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint("Adding program to hamstall list of programs")
     file.add_line(program_internal_name + '\n',"~/.hamstall/database")
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
@@ -53,7 +53,7 @@ def gitinstall(git_url, program_internal_name):
     if yn == 'y':
         binlink(program_internal_name)
     print("Install complete!")
-    sys.exit()
+    generic.leave()
 
 
 def manage(program):
@@ -74,7 +74,7 @@ def manage(program):
             pathify(program)
         elif option == 'u':
             uninstall(program)
-            sys.exit()
+            generic.leave()
         elif option == 'r':
             file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
         elif option == 'c':
@@ -84,7 +84,7 @@ def manage(program):
             os.chdir(file.full("~/.hamstall/bin/" + program + "/"))
             os.system("/bin/bash")
         elif option == 'e':
-            sys.exit()
+            generic.leave()
 
 
 def binlink(program_internal_name):
@@ -124,7 +124,7 @@ def update():
     global can_update
     if not(can_update):
         print("requests not found! Can't update!")
-        sys.exit(1)
+        generic.leave(1)
     """Update hamstall after checking for updates"""
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
@@ -141,17 +141,17 @@ def update():
                 os.remove(file.full('~/.hamstall/') + i)
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
-        sys.exit()
+        generic.leave()
     else:
         print("No update found!")
-        sys.exit()
+        generic.leave()
 
 
 def erase():
     """Remove hamstall"""
     if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
         print("hamstall not detected so not removed!")
-        sys.exit()
+        generic.leave()
     config.vprint('Removing source line from bashrc')
     file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
     config.vprint('Removing hamstall directory')
@@ -162,14 +162,14 @@ def erase():
         pass
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
-    sys.exit()
+    generic.leave()
 
 
 def first_time_setup(sym):
     """Create hamstall files in ~/.hamstall"""
     if file.exists(file.full('~/.hamstall/hamstall.py')):
         print('Please don\'t run first time setup on an already installed system!')
-        sys.exit()
+        generic.leave()
     print('Installing hamstall to your system...')
     try:
         os.mkdir(file.full("~/.hamstall"))
@@ -198,7 +198,7 @@ def first_time_setup(sym):
                     copyfile(i, file.full('~/.hamstall/' + i))
                 except FileNotFoundError:
                     print("A file is missing that was attempted to be copied! Install halted!")
-                    sys.exit(1)
+                    generic.leave(1)
     version_file = hamstall_file[0:len(hamstall_file) - 14] + 'version'
     copyfile(version_file, file.full('~/.hamstall/version'))
     file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")
@@ -206,7 +206,7 @@ def first_time_setup(sym):
     print('First time setup complete!')
     print('Please run the command "source ~/.bashrc" or restart your terminal.')
     print('Afterwards, you may begin using hamstall with the hamstall command!')
-    sys.exit()
+    generic.leave()
 
 
 def verbose_toggle():
@@ -219,7 +219,7 @@ def install(program):
     program_internal_name = file.name(program)
     if file.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint("Removing old temp directory (if it exists!)")
     try:
         rmtree(file.full("/tmp/hamstall-temp"))  #Removes temp directory (used during installs)
@@ -258,14 +258,14 @@ def install(program):
         command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
     else:
         print('Error! File type not supported!')
-        sys.exit(1)
+        generic.leave(1)
     config.vprint('File type detected: ' + file_extension)
     try:
         os.system(command_to_go)  #Extracts program archive
     except:
         print('Failed to run command: ' + command_to_go + "!")
         print("Program installation halted!")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint('Checking for folder in folder')
     if os.path.isdir(file.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
@@ -291,7 +291,7 @@ def install(program):
     except:
         config.vprint('Temp folder not found so not deleted!')
     print("Install completed!")
-    sys.exit()
+    generic.leave()
 
 
 def dirinstall(program_path, program_internal_name):
@@ -307,7 +307,7 @@ def dirinstall(program_path, program_internal_name):
     if yn == 'y':
         binlink(program_internal_name)
     print("Install completed!")
-    sys.exit()
+    generic.leave()
 
 
 def uninstall(program):
@@ -330,7 +330,7 @@ def list_programs():
     for l in open_file:
         newl = l.rstrip()
         print(newl)
-    sys.exit()
+    generic.leave()
 
 
 def get_online_version(type_of_replacement):
@@ -340,7 +340,7 @@ def get_online_version(type_of_replacement):
     file - .hamstall folder version"""
     if not(can_update):
         print("requests library not installed! Exiting...")
-        sys.exit(1)
+        generic.leave(1)
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
     version_raw = requests.get(version_url)
     version = version_raw.text
@@ -381,7 +381,7 @@ def download_files(files, folder):
     global can_update
     if not(can_update):
         print("Cannot download files if the request library isn't installed!")
-        sys.exit(1)
+        generic.leave(1)
     for i in files:
         r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/" + i)
         open(file.full(folder + i), 'wb').write(r.content)

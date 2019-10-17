@@ -14,6 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
+import sys
+import file
+import config
 
 def get_input(question, options, default):
     """input() but supports a default answer and
@@ -26,3 +29,7 @@ def get_input(question, options, default):
         return default  #If answer is blank return default answer
     else:
         return answer  #Return answer if it isn't the default answer
+
+def leave(exit_code=0):
+    config.unlock()
+    sys.exit(exit_code)

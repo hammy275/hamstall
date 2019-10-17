@@ -50,6 +50,13 @@ username = getpass.getuser()
 if username == 'root':
     print('Note: Running as root user will install programs for the root user to use!')
 
+if config.locked():
+    config.vprint("Lock file detected at /tmp/hamstall-lock. Delete this file if you are completely sure no other instances of hamstall are running!")
+    print("Another instance of hamstall is probably running! Execution halted!")
+    sys.exit(2)
+else:
+    config.lock()
+
 if not(file.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""
     yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]', ['y','n','debug'], 'y')
@@ -59,22 +66,22 @@ if not(file.exists('~/.hamstall/hamstall.py')):
         prog_manage.first_time_setup(True)
     else:
         print('hamstall not installed.')
-    sys.exit()
+    generic.leave()
 
 file_version = prog_manage.get_file_version('file')
 if config.get_version('file_version') > file_version:
     ##hamstall directory conversion code here##
-    sys.exit()
+    generic.leave()
 
 if prog_manage.get_file_version('prog') == 1: #Online update broke between versions 1 and 2 of hamstall
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
-    sys.exit()
+    generic.leave()
 
 if args.install is not None:
     does_archive_exist = file.exists(args.install)
     if not(does_archive_exist):
         print("File to install does not exist!")
-        sys.exit()
+        generic.leave()
     program_internal_name = file.name(args.install)  #Get the program name
     file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
     if file_check:  #Reinstall check
@@ -84,14 +91,14 @@ if args.install is not None:
             prog_manage.install(args.install)  #Reinstall
         else:
             print("Reinstall cancelled.")
-            sys.exit()
+            generic.leave()
     else:
         prog_manage.install(args.install)  #No reinstall needed to be asked, install program
 
 elif args.gitinstall is not None:
     if shutil.which("git") is None:
         print("git not installed! Please install it before using git install functionality!")
-        sys.exit()
+        generic.leave()
     else:
         program_internal_name = file.name(args.gitinstall)
         file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
@@ -102,7 +109,7 @@ elif args.gitinstall is not None:
                 prog_manage.gitinstall(args.gitinstall, program_internal_name)
             else:
                 print("Reinstall cancelled.")
-                sys.exit()
+                generic.leave()
         else:
             prog_manage.gitinstall(args.gitinstall, program_internal_name)
 
@@ -110,10 +117,10 @@ elif args.gitinstall is not None:
 elif args.dirinstall is not None:
     if not(os.path.isdir(args.dirinstall)):
         print("Folder to install does not exist!")
-        sys.exit()
+        generic.leave()
     if args.dirinstall[len(args.dirinstall) - 1] != '/':
         print("Please make sure the directory ends with a / !")
-        sys.exit()
+        generic.leave()
     prog_int_name_temp = args.dirinstall[0:len(args.dirinstall)-1]
     program_internal_name = file.name(prog_int_name_temp + '.tar.gz')  #Add .tar.gz to make the original function work (a hackey solution I know)
     file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word')
@@ -124,7 +131,7 @@ elif args.dirinstall is not None:
             prog_manage.dirinstall(args.dirinstall, program_internal_name)
         else:
             print("Reinstall cancelled.")
-            sys.exit()
+            generic.leave()
     else:
         prog_manage.dirinstall(args.dirinstall, program_internal_name)
 
@@ -133,14 +140,14 @@ elif args.remove != None:
         prog_manage.uninstall(args.remove)  #Uninstall program
     else:
         print("Program does not exist!")  #Program doesn't exist
-    sys.exit()
+    generic.leave()
 
 elif args.manage != None:
     if file.check_line(args.manage, '~/.hamstall/database', 'word'):
         prog_manage.manage(args.manage)
     else:
         print("Program does not exist!")
-    sys.exit()
+    generic.leave()
 
 elif args.list:
     prog_manage.list_programs()  #List programs installed
@@ -158,7 +165,7 @@ elif args.erase:
             print('Erase cancelled.')
     else:
         print('Erase cancelled.')
-    sys.exit()
+    generic.leave()
 
 elif args.verbose:  #Verbose toggle
     prog_manage.verbose_toggle()
@@ -178,3 +185,5 @@ Internal Version Code: {file_version}.{prog_version}
 For help, type "hamstall -h"
     """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"), prog_version=config.get_version("prog_internal_version"))
     )
+
+generic.leave() #Catch all to make sure we unlock at the end of code execution

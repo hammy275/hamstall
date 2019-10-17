@@ -1,17 +1,15 @@
 import sys
 import os
 import pytest
-from unittest.mock import patch
+import prog_manage
 from io import StringIO
 
 sys.path.insert(1, '../')
 os.chdir(os.path.expandvars(".."))
 
-import prog_manage
-import generic
-import file
 
-##This is more of an init that removes and re-installs hamstall so we have a blank slate to work with for testing.
+# This is more of an init that removes and re-installs hamstall so we have a blank slate to work with for testing.
+
 
 def test_reset(monkeypatch):
     with pytest.raises(SystemExit):

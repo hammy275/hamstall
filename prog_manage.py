@@ -33,6 +33,20 @@ import file
 import config
 import generic
 
+
+def finish_install(program_internal_name):
+    config.vprint("Adding program to hamstall list of programs")
+    file.add_line(program_internal_name + '\n', "~/.hamstall/database")
+    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
+    if yn == 'y':
+        pathify(program_internal_name)
+    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
+    if yn == 'y':
+        binlink(program_internal_name)
+    print("Install complete!")
+    generic.leave()
+
+
 def gitinstall(git_url, program_internal_name):
     config.vprint("Checking for .git extension")
     if file.extension(git_url) != ".git":
@@ -44,16 +58,7 @@ def gitinstall(git_url, program_internal_name):
     if err != 0:
         print("Error detected! Install halted.")
         generic.leave(1)
-    config.vprint("Adding program to hamstall list of programs")
-    file.add_line(program_internal_name + '\n',"~/.hamstall/database")
-    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-    if yn == 'y':
-        pathify(program_internal_name)
-    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
-    if yn == 'y':
-        binlink(program_internal_name)
-    print("Install complete!")
-    generic.leave()
+    finish_install(program_internal_name)
 
 
 def manage(program):
@@ -93,9 +98,10 @@ def binlink(program_internal_name):
         files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
         print(' '.join(files))
         file_chosen = 'Cool fact. This line was originally written on line 163.'
-        while file_chosen not in files:  #Get file to binlink from user
+        while file_chosen not in files:  # Get file to binlink from user
             file_chosen = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
-        line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/' + program_internal_name) + '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
+        line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/' + program_internal_name) + \
+                      '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
         config.vprint("Adding alias to bashrc")
         file.add_line(line_to_add, "~/.hamstall/.bashrc")
         yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
@@ -122,7 +128,7 @@ def command(program):
 
 def update():
     global can_update
-    if not(can_update):
+    if not can_update:
         print("requests not found! Can't update!")
         generic.leave(1)
     """Update hamstall after checking for updates"""
@@ -158,7 +164,7 @@ def erase():
     rmtree(file.full('~/.hamstall'))
     try:
         rmtree("/tmp/hamstall-temp")
-    except:
+    except FileNotFoundError:
         pass
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
@@ -184,8 +190,8 @@ def first_time_setup(sym):
     os.mkdir(file.full("~/.hamstall/bin"))
     file.create("~/.hamstall/database")
     file.create("~/.hamstall/config")
-    file.create("~/.hamstall/.bashrc") #Create directories and files
-    file.add_line("Verbose=False\n","~/.hamstall/config") #Write verbosity line to config
+    file.create("~/.hamstall/.bashrc")  # Create directories and files
+    file.add_line("Verbose=False\n","~/.hamstall/config")  # Write verbosity line to config
     hamstall_file = os.path.realpath(__file__)
     files = os.listdir()
     for i in files:
@@ -202,7 +208,7 @@ def first_time_setup(sym):
     version_file = hamstall_file[0:len(hamstall_file) - 14] + 'version'
     copyfile(version_file, file.full('~/.hamstall/version'))
     file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")
-    file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc") #Add bashrc line
+    file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
     print('First time setup complete!')
     print('Please run the command "source ~/.bashrc" or restart your terminal.')
     print('Afterwards, you may begin using hamstall with the hamstall command!')
@@ -222,15 +228,15 @@ def install(program):
         generic.leave(1)
     config.vprint("Removing old temp directory (if it exists!)")
     try:
-        rmtree(file.full("/tmp/hamstall-temp"))  #Removes temp directory (used during installs)
-    except:
+        rmtree(file.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+    except FileNotFoundError:
         config.vprint("Temp directory did not exist!")
     config.vprint("Creating new temp directory")
-    os.mkdir(file.full("/tmp/hamstall-temp"))  #Creates temp directory for extracting archive
+    os.mkdir(file.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
     config.vprint("Extracting archive to temp directory")
     file_extension = file.extension(program)
     program = file.spaceify(program)
-    if config.vcheck():  #Creates the command to run to extract the archive
+    if config.vcheck():  # Creates the command to run to extract the archive
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             vflag = 'v'
         elif file_extension == '.zip':
@@ -261,7 +267,7 @@ def install(program):
         generic.leave(1)
     config.vprint('File type detected: ' + file_extension)
     try:
-        os.system(command_to_go)  #Extracts program archive
+        os.system(command_to_go)  # Extracts program archive
     except:
         print('Failed to run command: ' + command_to_go + "!")
         print("Program installation halted!")
@@ -278,36 +284,19 @@ def install(program):
     config.vprint("Moving program to directory")
     move(source,dest)
     config.vprint("Adding program to hamstall list of programs")
-    file.add_line(program_internal_name + '\n', "~/.hamstall/database")
-    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-    if yn == 'y':
-        pathify(program_internal_name)
-    yn = generic.get_input('Would you like to be able to create a binlink? [y/N]', ['y', 'n'], 'n')
-    if yn == 'y':
-        binlink(program_internal_name)
     config.vprint('Removing old temp directory...')
     try:
         rmtree(file.full("/tmp/hamstall-temp"))
-    except:
+    except FileNotFoundError:
         config.vprint('Temp folder not found so not deleted!')
-    print("Install completed!")
-    generic.leave()
+    finish_install(program_internal_name)
 
 
 def dirinstall(program_path, program_internal_name):
     """Install a directory"""
     config.vprint("Moving folder to hamstall destination")
     move(program_path, file.full("~/.hamstall/bin/"))
-    config.vprint("Adding program to hamstall list of programs")
-    file.add_line(program_internal_name + '\n',"~/.hamstall/database")
-    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-    if yn == 'y':
-        pathify(program_internal_name)
-    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
-    if yn == 'y':
-        binlink(program_internal_name)
-    print("Install completed!")
-    generic.leave()
+    finish_install(program_internal_name)
 
 
 def uninstall(program):

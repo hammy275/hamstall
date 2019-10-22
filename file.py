@@ -16,12 +16,19 @@
 
 import re
 import os
+import json
 
+def write_db():
+    try:
+        with open(full("~/.hamstall/database"), "w") as dbf:
+            json.dump(db, dbf)
+    except FileNotFoundError:
+        print("Unable to write database! Are you erasing hamstall?")
 
 def name(program):
     """Returns name of program"""
     program_internal_name = re.sub(r'.*/', '/', program)
-    extension_length = len(extension(program)) #Get extension length
+    extension_length = len(extension(program)) # Get extension length
     program_internal_name = program_internal_name[1:(len(program_internal_name)-extension_length)]
     return program_internal_name
 
@@ -133,3 +140,30 @@ def char_check(name):
         if c == ' ' or c == '#':
             return True
     return False
+
+"""
+Database structure
+
+{
+    "options" : {
+        "Verbose" : True
+    }
+    "version" : {
+        "file_version" : 2
+        "prog_internal_version" : 5
+    }
+    "programs" : {
+        "package" : {
+            "desktops" : [
+                "desktop_file_name"
+            ]
+        }
+    }
+}
+"""
+
+try:
+    with open(full("~/.hamstall/database")) as f:
+        db = json.load(f)
+except FileNotFoundError:
+    db = {}

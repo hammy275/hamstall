@@ -16,6 +16,7 @@
 
 import re
 import os
+import sys
 
 import file
 
@@ -23,7 +24,7 @@ import file
 
 version = "1.1.0"
 prog_internal_version = 5
-file_version = 1
+file_version = 2
 
 #############
 
@@ -31,38 +32,22 @@ file_version = 1
 def read_config(key):
     """Gets the value stored in ~/.hamstall/config for the given key"""
     try:
-        f = open(file.full('~/.hamstall/config'), 'r')
-    except FileNotFoundError:
-        return False
-    open_file = f.readlines()
-    f.close()
-    line_num = 0
-    for l in open_file:
-        if key in l:
-            open_line = open_file[line_num]
-            open_line = re.sub(r'.*=', '=', open_line)
-            if 'False' in open_line:
-                return False
-            elif 'True' in open_line:
-                return True
-            else:
-                to_return = str(open_line[1:])
-                return to_return.rstrip()
+        return file.db["options"][key]
+    except KeyError:
+        if key == "Verbose":
+            return False
         else:
-            line_num += 1
+            print("Attempted to read a config value that doesn't exist!")
+            sys.exit(2)
 
 
 def change_config(key, mode, value=None):
     """Flips a value in the config between true and false"""
-    original = read_config(key)
     if mode == 'flip':
-        to_remove = key + '=' + str(original)
-        to_add = key + '=' + str(not(original)) + '\n'
-        file.remove_line(to_remove, "~/.hamstall/config", 'fuzzy')
-        file.add_line(to_add, '~/.hamstall/config')
+        file.db["options"][key] = not(file.db["options"][key])
     elif mode == 'change':
-        file.remove_line(key, "~/.hamstall.config", 'fuzzy')
-        file.add_line(key + '=' + value, "~/.hamstall/config")
+        file.db["options"][key] = value
+    file.write_db()
 
 
 def vcheck():

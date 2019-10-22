@@ -34,9 +34,25 @@ import config
 import generic
 
 
+def create_db():
+    db_template = {
+        "options" : {
+            "Verbose" : False
+        },
+    "version" : {
+        "file_version" : config.file_version,
+        "prog_internal_version" : config.prog_internal_version
+    },
+    "programs" : {
+        }
+    }
+    file.db = db_template
+    file.write_db()
+
+
 def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
-    file.add_line(program_internal_name + '\n', "~/.hamstall/database")
+    file.db["programs"].update({program_internal_name : {}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -45,6 +61,61 @@ def finish_install(program_internal_name):
         binlink(program_internal_name)
     print("Install complete!")
     generic.leave()
+
+
+def create_desktop(program_internal_name):
+    files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
+    print(' '.join(files))
+    program_file = '/Placeholder/'
+    config.vprint("Getting user inputs")
+    while program_file not in files:  # Get file to binlink from user
+        program_file = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
+    exec_path = file.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+    comment = input("Please input a comment for the application: ")
+    if comment == "":
+        comment = program_internal_name
+    terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
+    if terminal.lower() == 'y':
+        should_terminal = "True"
+    else:
+        should_terminal = "False"
+    name = input("Please enter a name: ")
+    ans = " "
+    chosen_categories = []
+    categories = ["audio", "video",
+    "development", "education", "game", "graphics",
+    "network", "office", "science", "settings",
+    "system", "utility"]
+    categories.append("end")
+    while ans.lower() != "end":
+        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to Utility)." + 
+        " Type \"end\" to end category selection. \n")
+        print(", ".join(categories))
+        ans = generic.get_input("", categories, "Utility")
+        if ans.capitalize() in chosen_categories or ans == "end":
+            pass
+        else:
+            ans = ans.capitalize()
+            chosen_categories.append(ans)
+            if ans in ["Audio", "Video"]:
+                chosen_categories.append("AudioVideo")
+    cats = ";".join(chosen_categories) + ";"  # Get categories for the .desktop
+    to_write = """
+[Desktop Entry]
+Name={name}
+Comment={comment}
+Exec={exec_path}
+Terminal={should_terminal}
+Type=Application
+Categories={categories}
+""".format(name=name, comment=comment, exec_path=exec_path,
+should_terminal=should_terminal, categories=cats)
+    os.chdir(file.full("~/.local/share/applications/"))
+    file.create("./{}.desktop".format(program_file))
+    with open(file.full("./{}.desktop".format(program_file)),'w') as f:
+        f.write(to_write)
+    file.db["programs"][program_internal_name]["desktops"].append("{}.desktop".format(program_file))
+    print("Desktop file created!")
 
 
 def gitinstall(git_url, program_internal_name):
@@ -69,10 +140,11 @@ def manage(program):
         print("p - Add " + program + " to PATH")
         print("u - Uninstall " + program)
         print("r - Remove all binlinks + PATHs for " + program)
+        print("d - Create a .desktop file for " + program)
         print("c - Run a command inside " + program + "'s directory")
         print("s - Launch a shell inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/c/s/E]", ['b','p','u','r','c','s','e'], 'e')
+        option = generic.get_input("[b/p/u/r/d/c/s/E]", ['b','p','u','r','d','c','s','e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -82,6 +154,8 @@ def manage(program):
             generic.leave()
         elif option == 'r':
             file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+        elif option == 'd':
+            create_desktop(program)
         elif option == 'c':
             command(program)
         elif option == 's':
@@ -148,6 +222,9 @@ def update():
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
         generic.leave()
+    elif final_version < prog_version_internal:
+        print("hamstall version newer than latest online version! Are you using the beta branch?")
+        generic.leave()
     else:
         print("No update found!")
         generic.leave()
@@ -189,10 +266,9 @@ def first_time_setup(sym):
         os.mkdir(file.full("/tmp/hamstall-temp/"))
     os.mkdir(file.full("~/.hamstall/bin"))
     file.create("~/.hamstall/database")
-    file.create("~/.hamstall/config")
+    create_db()
     file.create("~/.hamstall/.bashrc")  # Create directories and files
     file.add_line("Verbose=False\n","~/.hamstall/config")  # Write verbosity line to config
-    hamstall_file = os.path.realpath(__file__)
     files = os.listdir()
     for i in files:
         i_num = len(i) - 3
@@ -205,8 +281,6 @@ def first_time_setup(sym):
                 except FileNotFoundError:
                     print("A file is missing that was attempted to be copied! Install halted!")
                     generic.leave(1)
-    version_file = hamstall_file[0:len(hamstall_file) - 14] + 'version'
-    copyfile(version_file, file.full('~/.hamstall/version'))
     file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")
     file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
     print('First time setup complete!')
@@ -303,22 +377,18 @@ def uninstall(program):
     """Uninstall a program"""
     config.vprint("Removing program")
     rmtree(file.full("~/.hamstall/bin/" + program + '/'))
-    config.vprint("Removing program from PATH")
+    config.vprint("Removing program from PATH and any binlinks for the program")
     file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
     config.vprint("Removing program from hamstall list of programs")
-    file.remove_line(program,"~/.hamstall/database", 'word')
+    del file.db["programs"][program]
     print("Uninstall complete!")
     return
 
 
 def list_programs():
     """List all installed programs"""
-    f = open(file.full('~/.hamstall/database'), 'r')
-    open_file = f.readlines()
-    f.close()
-    for l in open_file:
-        newl = l.rstrip()
-        print(newl)
+    for prog in file.db["programs"].keys():
+        print(prog)
     generic.leave()
 
 
@@ -345,25 +415,14 @@ def get_online_version(type_of_replacement):
             counter += 1
 
 
-def get_file_version(type_of_replacement):
-    """Get current version of hamstall from version file
+def get_file_version(version_type):
+    """Get current version of hamstall from database file
     prog - Program version
     file - .hamstall folder version"""
-    f = open(file.full('~/.hamstall/version'), 'r')
-    version = f.readlines()
-    version = ''.join(version)
-    f.close()
-    counter = 0
-    for c in version:
-        if c == '.':
-            spot = counter + 1
-            if type_of_replacement == 'file':
-                return int(version[0:(spot-1)])
-            elif type_of_replacement == 'prog':
-                return int(version[spot:])
-        else:
-            counter += 1
-
+    if version_type == 'file':
+        return file.db["version"]["file_version"]
+    elif version_type == 'prog':
+        return file.db["version"]["prog_internal_version"]
 
 def download_files(files, folder):
     """Downloads a list of files and writes them"""

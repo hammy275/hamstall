@@ -68,7 +68,19 @@ if not(file.exists('~/.hamstall/hamstall.py')):
 
 file_version = prog_manage.get_file_version('file')
 if config.get_version('file_version') > file_version:
-    ##hamstall directory conversion code here##
+    if file_version == 1:
+        print("Removing database file. This will corrupt which programs are installed!")
+        print("If you are using hamstall, please contact hammy3502 for an upgrade process.")
+        input("Press ENTER to continue...")
+        try:
+            config.vprint("Removing old database")
+            os.remove(file.full("~/.hamstall/database"))
+        except FileNotFoundError:
+            pass
+        config.vprint("Creating new database")
+        file.create("~/.hamstall/database")
+        prog_manage.create_db()
+        print("Upgrade complete!")
     generic.leave()
 
 if prog_manage.get_file_version('prog') == 1:  # Online update broke between versions 1 and 2 of hamstall

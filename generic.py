@@ -16,6 +16,7 @@
 
 import sys
 import config
+import file
 
 
 def get_input(question, options, default):
@@ -32,5 +33,6 @@ def get_input(question, options, default):
 
 
 def leave(exit_code=0):
+    file.write_db()
     config.unlock()
     sys.exit(exit_code)

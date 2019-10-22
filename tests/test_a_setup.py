@@ -4,8 +4,8 @@ import pytest
 import prog_manage
 from io import StringIO
 
-sys.path.insert(1, '../')
-os.chdir(os.path.expandvars(".."))
+#sys.path.insert(1, '../')
+#os.chdir(os.path.expandvars(".."))
 
 
 # This is more of an init that removes and re-installs hamstall so we have a blank slate to work with for testing.

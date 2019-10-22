@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
-import re
 import os
 import sys
 
@@ -44,7 +43,7 @@ def read_config(key):
 def change_config(key, mode, value=None):
     """Flips a value in the config between true and false"""
     if mode == 'flip':
-        file.db["options"][key] = not(file.db["options"][key])
+        file.db["options"][key] = not (file.db["options"][key])
     elif mode == 'change':
         file.db["options"][key] = value
     file.write_db()

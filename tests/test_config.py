@@ -1,7 +1,3 @@
-import sys
-import os
-import pytest
-
 import config
 
 
@@ -18,5 +14,3 @@ def test_change_config():
 
 def test_vcheck():
     assert config.vcheck() is False
-
-

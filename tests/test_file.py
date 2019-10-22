@@ -1,7 +1,5 @@
-
-import pytest
-
 import file
+import json
 
 
 def test_name():
@@ -26,7 +24,7 @@ def test_spaceify():
 
 
 def test_check_line():
-    #TODO: Test other modes
+    # TODO: Test other modes
     assert file.check_line("Verbose=False", "~/.hamstall/config", "fuzzy") is True
     assert file.check_line("ThisShouldNotBeFound=True", "~/.hamstall/config", "fuzzy") is False
 
@@ -37,7 +35,7 @@ def test_create():
 
 
 def test_remove_line():
-    #TODO: Test other modes
+    # TODO: Test other modes
     file.remove_line("Verbose=False", "~/.hamstall/config", "fuzzy")
     assert file.check_line("Verbose=False", "~/.hamstall/config", "fuzzy") is False
 
@@ -51,4 +49,13 @@ def test_char_check():
     assert file.char_check("asdf") is False
     assert file.char_check("asdf ") is True
     assert file.char_check("as#df") is True
-    
+
+
+def test_write_db():
+    old_db = file.db
+    file.db.update({"test": "here"})
+    file.write_db()
+    old_db.update({"test": "here"})
+    with open(file.full("~/.hamstall/database")) as f:
+        db = json.load(f)
+    assert old_db == db

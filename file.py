@@ -18,30 +18,32 @@ import re
 import os
 import json
 
+
 def write_db():
     try:
         with open(full("~/.hamstall/database"), "w") as dbf:
             json.dump(db, dbf)
     except FileNotFoundError:
-        print("Unable to write database! Are you erasing hamstall?")
+        print("Unable to write to database! Are you erasing hamstall?")
+
 
 def name(program):
     """Returns name of program"""
     program_internal_name = re.sub(r'.*/', '/', program)
-    extension_length = len(extension(program)) # Get extension length
-    program_internal_name = program_internal_name[1:(len(program_internal_name)-extension_length)]
+    extension_length = len(extension(program))  # Get extension length
+    program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
     return program_internal_name
 
 
 def extension(program):
     """Returns program extension"""
-    if program[((len(program))-3):len(program)].lower() == '.7z':
-        return program[((len(program))-3):len(program)].lower()
-    elif program[((len(program))-4):len(program)].lower() in ['.zip', '.rar', '.git']:
-        return program[((len(program))-4):len(program)]
+    if program[((len(program)) - 3):len(program)].lower() == '.7z':
+        return program[((len(program)) - 3):len(program)].lower()
+    elif program[((len(program)) - 4):len(program)].lower() in ['.zip', '.rar', '.git']:
+        return program[((len(program)) - 4):len(program)]
     else:
         # Returns the last 7 characters of the provided file name.
-        return program[((len(program))-7):len(program)]
+        return program[((len(program)) - 7):len(program)]
 
 
 def exists(file_name):
@@ -113,7 +115,7 @@ def remove_line(line, file_path, mode):
         elif mode == 'fuzzy':
             new_l = l.rstrip()
         if line in new_l:
-            if not('#' in new_l) and mode == 'poundword':
+            if not ('#' in new_l) and mode == 'poundword':
                 rewrite += l
             else:
                 pass
@@ -140,6 +142,7 @@ def char_check(name):
         if c == ' ' or c == '#':
             return True
     return False
+
 
 """
 Database structure

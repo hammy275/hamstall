@@ -1,7 +1,7 @@
-import pytest
 from io import StringIO
 
 import generic
+
 
 def test_get_input(monkeypatch):
     monkeypatch.setattr("sys.stdin", StringIO("y\n"))

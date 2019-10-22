@@ -14,12 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
-import sys
 import os
 from shutil import copyfile, rmtree, move
 from subprocess import call
+
 try:
     import requests
+
     can_update = True
 except ImportError:
     can_update = False
@@ -36,14 +37,14 @@ import generic
 
 def create_db():
     db_template = {
-        "options" : {
-            "Verbose" : False
+        "options": {
+            "Verbose": False
         },
-    "version" : {
-        "file_version" : config.file_version,
-        "prog_internal_version" : config.prog_internal_version
-    },
-    "programs" : {
+        "version": {
+            "file_version": config.file_version,
+            "prog_internal_version": config.prog_internal_version
+        },
+        "programs": {
         }
     }
     file.db = db_template
@@ -52,7 +53,7 @@ def create_db():
 
 def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
-    file.db["programs"].update({program_internal_name : {}})
+    file.db["programs"].update({program_internal_name: {"desktops" : []}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -82,14 +83,11 @@ def create_desktop(program_internal_name):
     name = input("Please enter a name: ")
     ans = " "
     chosen_categories = []
-    categories = ["audio", "video",
-    "development", "education", "game", "graphics",
-    "network", "office", "science", "settings",
-    "system", "utility"]
-    categories.append("end")
+    categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office", "science",
+                  "settings", "system", "utility", "end"]
     while ans.lower() != "end":
-        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to Utility)." + 
-        " Type \"end\" to end category selection. \n")
+        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
+              "Utility). Type \"end\" to end category selection. \n")
         print(", ".join(categories))
         ans = generic.get_input("", categories, "Utility")
         if ans.capitalize() in chosen_categories or ans == "end":
@@ -109,10 +107,10 @@ Terminal={should_terminal}
 Type=Application
 Categories={categories}
 """.format(name=name, comment=comment, exec_path=exec_path,
-should_terminal=should_terminal, categories=cats)
+           should_terminal=should_terminal, categories=cats)
     os.chdir(file.full("~/.local/share/applications/"))
     file.create("./{}.desktop".format(program_file))
-    with open(file.full("./{}.desktop".format(program_file)),'w') as f:
+    with open(file.full("./{}.desktop".format(program_file)), 'w') as f:
         f.write(to_write)
     file.db["programs"][program_internal_name]["desktops"].append("{}.desktop".format(program_file))
     print("Desktop file created!")
@@ -144,7 +142,7 @@ def manage(program):
         print("c - Run a command inside " + program + "'s directory")
         print("s - Launch a shell inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/d/c/s/E]", ['b','p','u','r','d','c','s','e'], 'e')
+        option = generic.get_input("[b/p/u/r/d/c/s/E]", ['b', 'p', 'u', 'r', 'd', 'c', 's', 'e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -187,7 +185,7 @@ def pathify(program_internal_name):
     """Adds an installed program to PATH"""
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-    file.add_line(line_to_write,"~/.hamstall/.bashrc")
+    file.add_line(line_to_write, "~/.hamstall/.bashrc")
     return
 
 
@@ -232,7 +230,7 @@ def update():
 
 def erase():
     """Remove hamstall"""
-    if not(file.exists(file.full("~/.hamstall/hamstall.py"))):
+    if not (file.exists(file.full("~/.hamstall/hamstall.py"))):
         print("hamstall not detected so not removed!")
         generic.leave()
     config.vprint('Removing source line from bashrc')
@@ -268,7 +266,7 @@ def first_time_setup(sym):
     file.create("~/.hamstall/database")
     create_db()
     file.create("~/.hamstall/.bashrc")  # Create directories and files
-    file.add_line("Verbose=False\n","~/.hamstall/config")  # Write verbosity line to config
+    file.add_line("Verbose=False\n", "~/.hamstall/config")  # Write verbosity line to config
     files = os.listdir()
     for i in files:
         i_num = len(i) - 3
@@ -356,7 +354,7 @@ def install(program):
         source = file.full('/tmp/hamstall-temp')
         dest = file.full('~/.hamstall/bin/' + program_internal_name)
     config.vprint("Moving program to directory")
-    move(source,dest)
+    move(source, dest)
     config.vprint("Adding program to hamstall list of programs")
     config.vprint('Removing old temp directory...')
     try:
@@ -378,7 +376,7 @@ def uninstall(program):
     config.vprint("Removing program")
     rmtree(file.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH and any binlinks for the program")
-    file.remove_line(program,"~/.hamstall/.bashrc", 'poundword')
+    file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
     config.vprint("Removing program from hamstall list of programs")
     del file.db["programs"][program]
     print("Uninstall complete!")
@@ -397,7 +395,7 @@ def get_online_version(type_of_replacement):
     """Get current version of hamstall through GitHub
     prog - Program version
     file - .hamstall folder version"""
-    if not(can_update):
+    if not can_update:
         print("requests library not installed! Exiting...")
         generic.leave(1)
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
@@ -424,10 +422,11 @@ def get_file_version(version_type):
     elif version_type == 'prog':
         return file.db["version"]["prog_internal_version"]
 
+
 def download_files(files, folder):
     """Downloads a list of files and writes them"""
     global can_update
-    if not(can_update):
+    if not can_update:
         print("Cannot download files if the request library isn't installed!")
         generic.leave(1)
     for i in files:

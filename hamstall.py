@@ -198,7 +198,7 @@ hamstall Version: {user_version}
 Internal Version Code: {file_version}.{prog_version}
 
 For help, type "hamstall -h"
-    """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"), prog_version=config.get_version("prog_internal_version"))
-    )
+    """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"),
+               prog_version=config.get_version("prog_internal_version")))
 
 generic.leave()  # Catch all to make sure we unlock at the end of code execution

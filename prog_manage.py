@@ -290,7 +290,6 @@ def first_time_setup(sym):
     file.create("~/.hamstall/database")
     create_db()
     file.create("~/.hamstall/.bashrc")  # Create directories and files
-    file.add_line("Verbose=False\n", "~/.hamstall/config")  # Write verbosity line to config
     files = os.listdir()
     for i in files:
         i_num = len(i) - 3

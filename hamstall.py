@@ -40,6 +40,8 @@ group.add_argument('-e', "--erase", help="Delete hamstall from your system", act
 group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
 group.add_argument('-u', '--update', help="Update hamstall if an update is available", action="store_true")
 group.add_argument('-m', '--manage', help="Manage an installed program")
+group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
+                                               "running!", action="store_true")
 args = parser.parse_args()  # Parser stuff
 
 username = getpass.getuser()
@@ -49,8 +51,16 @@ if username == 'root':
 if config.locked():
     config.vprint("Lock file detected at /tmp/hamstall-lock. " +
                   "Delete this file if you are completely sure no other instances of hamstall are running!")
-    print("Another instance of hamstall is probably running! Execution halted!")
-    sys.exit(2)
+    if args.remove_lock:
+        try:
+            os.remove(file.full("/tmp/hamstall-lock"))
+            print("Lock removed!")
+        except FileNotFoundError:
+            print("Lock doesn't exist, so not removed!")
+        generic.leave(0)
+    else:
+        print("Another instance of hamstall is probably running! Execution halted!")
+        sys.exit(2)
 else:
     config.lock()
 
@@ -155,7 +165,7 @@ elif args.remove is not None:
     generic.leave()
 
 elif args.manage is not None:
-    if file.check_line(args.manage, '~/.hamstall/database', 'word'):
+    if args.manage in file.db["programs"]:
         prog_manage.manage(args.manage)
     else:
         print("Program does not exist!")

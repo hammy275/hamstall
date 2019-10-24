@@ -51,6 +51,23 @@ def create_db():
     file.write_db()
 
 
+def remove_desktop(program):
+    if not file.db["programs"][program]["desktops"]:
+        print("Program has no .desktop files!")
+    else:
+        print("Desktops: ")
+        for d in file.db["programs"][program]["desktops"]:
+            print(d)
+        inp = "/ choose desktop"
+        while not(inp in file.db["programs"][program]["desktops"]) and inp != "exit":
+            inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
+        try:
+            os.remove(file.full("~/.local/share/applications/{}.desktop".format(inp)))
+        except FileNotFoundError:
+            pass
+        file.db["programs"][program]["desktops"].remove(inp)
+
+
 def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
     file.db["programs"].update({program_internal_name: {"desktops" : []}})
@@ -71,6 +88,10 @@ def create_desktop(program_internal_name):
     config.vprint("Getting user inputs")
     while program_file not in files:  # Get file to binlink from user
         program_file = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
+    desktop_name = "{}-{}".format(program_file, program_internal_name)
+    if file.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
+        print("Desktop file already exists!")
+        return
     exec_path = file.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
     comment = input("Please input a comment for the application: ")
     if comment == "":
@@ -109,11 +130,11 @@ Categories={categories}
 """.format(name=name, comment=comment, exec_path=exec_path,
            should_terminal=should_terminal, categories=cats)
     os.chdir(file.full("~/.local/share/applications/"))
-    file.create("./{}.desktop".format(program_file))
-    with open(file.full("./{}.desktop".format(program_file)), 'w') as f:
+    file.create("./{}.desktop".format(desktop_name))
+    with open(file.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
-    file.db["programs"][program_internal_name]["desktops"].append("{}.desktop".format(program_file))
-    print("Desktop file created!")
+    file.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+    print("\nDesktop file created!")
 
 
 def gitinstall(git_url, program_internal_name):
@@ -139,10 +160,11 @@ def manage(program):
         print("u - Uninstall " + program)
         print("r - Remove all binlinks + PATHs for " + program)
         print("d - Create a .desktop file for " + program)
+        print("rd - Remove a .desktop file for " + program)
         print("c - Run a command inside " + program + "'s directory")
         print("s - Launch a shell inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/d/c/s/E]", ['b', 'p', 'u', 'r', 'd', 'c', 's', 'e'], 'e')
+        option = generic.get_input("[b/p/u/r/d/rd/c/s/E]", ['b', 'p', 'u', 'r', 'd', 'c', 'rd', 's', 'e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -154,6 +176,8 @@ def manage(program):
             file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
         elif option == 'd':
             create_desktop(program)
+        elif option == 'rd':
+            remove_desktop(program)
         elif option == 'c':
             command(program)
         elif option == 's':

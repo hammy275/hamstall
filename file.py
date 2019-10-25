@@ -16,23 +16,35 @@
 
 import re
 import os
+import json
+
+
+def write_db():
+    try:
+        with open(full("~/.hamstall/database"), "w") as dbf:
+            json.dump(db, dbf)
+    except FileNotFoundError:
+        print("Unable to write to database! Are you erasing hamstall?")
 
 
 def name(program):
     """Returns name of program"""
     program_internal_name = re.sub(r'.*/', '/', program)
-    extension_length = len(extension(program)) #Get extension length
-    program_internal_name = program_internal_name[1:(len(program_internal_name)-extension_length)]
+    extension_length = len(extension(program))  # Get extension length
+    program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
     return program_internal_name
+
 
 def extension(program):
     """Returns program extension"""
-    # Only supported 4 char file extension
-    if program[((len(program))-4):len(program)].lower() == '.zip':
-        return program[((len(program))-4):len(program)]
+    if program[((len(program)) - 3):len(program)].lower() == '.7z':
+        return program[((len(program)) - 3):len(program)].lower()
+    elif program[((len(program)) - 4):len(program)].lower() in ['.zip', '.rar', '.git']:
+        return program[((len(program)) - 4):len(program)]
     else:
         # Returns the last 7 characters of the provided file name.
-        return program[((len(program))-7):len(program)]
+        return program[((len(program)) - 7):len(program)]
+
 
 def exists(file_name):
     """Returns if file exists"""
@@ -41,9 +53,11 @@ def exists(file_name):
     except FileNotFoundError:
         return False
 
+
 def full(file_name):
     """Returns program with corrected ~ to /home/user"""
-    return os.path.expanduser(file_name)
+    return os.path.abspath(os.path.expanduser(file_name))
+
 
 def spaceify(file_name):
     """Adds a backslash before every space for bash"""
@@ -56,6 +70,7 @@ def spaceify(file_name):
     for i in char_list:
         return_string = return_string + i
     return return_string
+
 
 def check_line(line, file_path, mode):
     """Returns if a line exists in a file
@@ -75,10 +90,12 @@ def check_line(line, file_path, mode):
             return True
     return False
 
+
 def create(file_path):
     """Creates an empty file"""
     f = open(full(file_path), "w+")
     f.close()
+
 
 def remove_line(line, file_path, mode):
     """Removes a line from a file
@@ -98,7 +115,7 @@ def remove_line(line, file_path, mode):
         elif mode == 'fuzzy':
             new_l = l.rstrip()
         if line in new_l:
-            if not('#' in new_l) and mode == 'poundword':
+            if not ('#' in new_l) and mode == 'poundword':
                 rewrite += l
             else:
                 pass
@@ -109,6 +126,7 @@ def remove_line(line, file_path, mode):
     written.close()  # Write then close our new copy of the file
     return
 
+
 def add_line(line, file_path):
     """Adds a line to a file"""
     file_path = full(file_path)
@@ -117,9 +135,38 @@ def add_line(line, file_path):
     f.close()
     return
 
+
 def char_check(name):
     """Returns if the provided string contains a space or #"""
     for c in name:
         if c == ' ' or c == '#':
             return True
     return False
+
+
+"""
+Database structure
+
+{
+    "options" : {
+        "Verbose" : True
+    }
+    "version" : {
+        "file_version" : 2
+        "prog_internal_version" : 5
+    }
+    "programs" : {
+        "package" : {
+            "desktops" : [
+                "desktop_file_name"
+            ]
+        }
+    }
+}
+"""
+
+try:
+    with open(full("~/.hamstall/database")) as f:
+        db = json.load(f)
+except FileNotFoundError:
+    db = {}

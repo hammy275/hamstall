@@ -57,12 +57,16 @@ if config.locked():
             print("Lock removed!")
         except FileNotFoundError:
             print("Lock doesn't exist, so not removed!")
-        generic.leave(0)
+        generic.leave()
     else:
         print("Another instance of hamstall is probably running! Execution halted!")
         sys.exit(2)
 else:
     config.lock()
+
+if args.remove_lock:
+    print("Lock doesn't exist, so not removed!")
+    generic.leave()
 
 if not(file.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""

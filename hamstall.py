@@ -158,7 +158,7 @@ elif args.dirinstall is not None:
         prog_manage.dirinstall(args.dirinstall, program_internal_name)
 
 elif args.remove is not None:
-    if file.check_line(args.remove, "~/.hamstall/database", 'word'):  # If uninstall script exists
+    if args.remove in file.db["programs"]:  # If uninstall script exists
         prog_manage.uninstall(args.remove)  # Uninstall program
     else:
         print("Program does not exist!")  # Program doesn't exist

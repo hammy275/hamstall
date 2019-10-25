@@ -25,7 +25,9 @@ def test_spaceify():
 
 def test_check_line():
     # TODO: Test other modes
-    assert file.check_line("Verbose=False", "~/.hamstall/config", "fuzzy") is True
+    file.create("~/.hamstall/config")
+    file.add_line("Test Line", "~/.hamstall/config")
+    assert file.check_line("Test Line", "~/.hamstall/config", "fuzzy") is True
     assert file.check_line("ThisShouldNotBeFound=True", "~/.hamstall/config", "fuzzy") is False
 
 
@@ -36,7 +38,7 @@ def test_create():
 
 def test_remove_line():
     # TODO: Test other modes
-    file.remove_line("Verbose=False", "~/.hamstall/config", "fuzzy")
+    file.remove_line("Test Line", "~/.hamstall/config", "fuzzy")
     assert file.check_line("Verbose=False", "~/.hamstall/config", "fuzzy") is False
 
 

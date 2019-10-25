@@ -43,7 +43,7 @@ def test_list_programs(capsys):
 def test_create_desktop(monkeypatch):
     monkeypatch.setattr("sys.stdin", StringIO("test.sh\nComment here\nn\nName Here\n\nend\n"))
     prog_manage.create_desktop("package")
-    assert file.exists("~/.local/share/applications/test.sh.desktop")
+    assert file.exists("~/.local/share/applications/test.sh-package.desktop")
 
 
 def test_uninstall():

@@ -259,6 +259,14 @@ def erase():
         generic.leave()
     config.vprint('Removing source line from bashrc')
     file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
+    config.vprint("Removing .desktop files")
+    for prog in file.db["programs"]:
+        if file.db["programs"][prog]["desktops"] != []:
+            for d in file.db["programs"][prog]["desktops"]:
+                try:
+                    os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
+                except FileNotFoundError:
+                    pass
     config.vprint('Removing hamstall directory')
     rmtree(file.full('~/.hamstall'))
     try:
@@ -396,10 +404,17 @@ def dirinstall(program_path, program_internal_name):
 
 def uninstall(program):
     """Uninstall a program"""
-    config.vprint("Removing program")
+    config.vprint("Removing program files")
     rmtree(file.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH and any binlinks for the program")
     file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    config.vprint("Removing program desktop files")
+    if file.db["programs"][program]["desktops"] != []:
+        for d in file.db["programs"][program]["desktops"]:
+            try:
+                os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
+            except FileNotFoundError:
+                pass
     config.vprint("Removing program from hamstall list of programs")
     del file.db["programs"][program]
     print("Uninstall complete!")

@@ -20,14 +20,13 @@ from subprocess import call
 
 try:
     import requests
-
     can_update = True
 except ImportError:
     can_update = False
     print("##########WARNING##########")
     print("requests library not installed! Ability to update hamstall")
     print("has been disabled! Use `pip3 install requests` or ")
-    print("`python3 -m pip install requests` on Linux systems to install it!")
+    print("`python3 -m pip install requests` to install it!")
     print("###########################")
 
 import file
@@ -38,7 +37,8 @@ import generic
 def create_db():
     db_template = {
         "options": {
-            "Verbose": False
+            "Verbose": False,
+            "AutoInstall": False
         },
         "version": {
             "file_version": config.file_version,
@@ -49,6 +49,23 @@ def create_db():
     }
     file.db = db_template
     file.write_db()
+
+
+def configure():
+    while True:
+        print("""
+Select an option:
+au - Enable/disable the ability to install updates when hamstall is run (requires ac to be enabled)
+v - Enable/disable verbose mode, showing more output when hamstall commands are run
+e - Exit hamstall
+        """)
+        option = generic.get_input("[au/v/E] ", ['au', 'v', 'e'], 'e')
+        if option == 'au':
+            config.change_config("AutoInstall", "flip")
+        elif option == 'v':
+            config.change_config("Verbose", "flip")
+        elif option == 'e':
+            generic.leave()
 
 
 def remove_desktop(program):
@@ -222,7 +239,7 @@ def command(program):
     return
 
 
-def update():
+def update(silent=False):
     global can_update
     if not can_update:
         print("requests not found! Can't update!")
@@ -240,16 +257,15 @@ def update():
         for i in files:
             i_num = len(i) - 3
             if i[i_num:len(i)] == '.py':
-                os.remove(file.full('~/.hamstall/') + i)
+                os.remove(file.full('~/.hamstall/' + i))
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
-        generic.leave()
     elif final_version < prog_version_internal:
-        print("hamstall version newer than latest online version! Are you using the beta branch?")
-        generic.leave()
+        if not silent:
+            print("hamstall version newer than latest online version! Are you using the beta branch?")
     else:
-        print("No update found!")
-        generic.leave()
+        if not silent:
+            print("No update found!")
 
 
 def erase():

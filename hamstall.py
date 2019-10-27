@@ -42,6 +42,7 @@ group.add_argument('-u', '--update', help="Update hamstall if an update is avail
 group.add_argument('-m', '--manage', help="Manage an installed program")
 group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
                                                "running!", action="store_true")
+group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
 args = parser.parse_args()  # Parser stuff
 
 username = getpass.getuser()
@@ -63,10 +64,6 @@ if config.locked():
         sys.exit(2)
 else:
     config.lock()
-
-if args.remove_lock:
-    print("Lock doesn't exist, so not removed!")
-    generic.leave()
 
 if not(file.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""
@@ -101,7 +98,14 @@ if prog_manage.get_file_version('prog') == 1:  # Online update broke between ver
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
     generic.leave()
 
-if args.install is not None:
+if config.read_config("AutoInstall"):
+    prog_manage.update(True)
+
+if args.remove_lock:
+    print("Lock doesn't exist, so not removed!")
+    generic.leave()
+
+elif args.install is not None:
     does_archive_exist = file.exists(args.install)
     if not does_archive_exist:
         print("File to install does not exist!")
@@ -201,6 +205,9 @@ elif args.verbose:  # Verbose toggle
 
 elif args.update:
     prog_manage.update()
+
+elif args.config:
+    prog_manage.configure()
 
 else:
     # About hamstall

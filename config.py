@@ -21,8 +21,8 @@ import file
 
 ###VERSIONS###
 
-version = "1.1.0"
-prog_internal_version = 5
+version = "1.1.1"
+prog_internal_version = 6
 file_version = 2
 
 #############
@@ -33,7 +33,7 @@ def read_config(key):
     try:
         return file.db["options"][key]
     except KeyError:
-        if key == "Verbose":
+        if key in ["Verbose", "AutoInstall"]:
             return False
         else:
             print("Attempted to read a config value that doesn't exist!")
@@ -43,7 +43,10 @@ def read_config(key):
 def change_config(key, mode, value=None):
     """Flips a value in the config between true and false"""
     if mode == 'flip':
-        file.db["options"][key] = not (file.db["options"][key])
+        try:
+            file.db["options"][key] = not (file.db["options"][key])
+        except KeyError:  # All config values are False by default, so this should make them True.
+            file.db["options"].update({key: True})
     elif mode == 'change':
         file.db["options"][key] = value
     file.write_db()

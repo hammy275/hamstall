@@ -79,7 +79,10 @@ if not(file.exists('~/.hamstall/hamstall.py')):
 
 file_version = -1
 while config.get_version('file_version') > file_version:
-    file_version = prog_manage.get_file_version('file')
+    try:
+        file_version = prog_manage.get_file_version('file')
+    except KeyError:
+        file_version = 1
     if file_version == 1:
         print("Removing database file. This will corrupt which programs are installed!")
         print("If you are using hamstall, please contact hammy3502 for an upgrade process.")

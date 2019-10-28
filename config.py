@@ -21,9 +21,9 @@ import file
 
 ###VERSIONS###
 
-version = "1.1.1"
-prog_internal_version = 6
-file_version = 2
+version = "1.1.2"
+prog_internal_version = 7
+file_version = 3
 
 #############
 
@@ -48,7 +48,10 @@ def change_config(key, mode, value=None):
         except KeyError:  # All config values are False by default, so this should make them True.
             file.db["options"].update({key: True})
     elif mode == 'change':
-        file.db["options"][key] = value
+        try:
+            file.db["options"][key] = value
+        except KeyError:
+            file.db["options"].update({key: value})
     file.write_db()
 
 

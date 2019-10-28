@@ -42,7 +42,8 @@ def create_db():
         },
         "version": {
             "file_version": config.file_version,
-            "prog_internal_version": config.prog_internal_version
+            "prog_internal_version": config.prog_internal_version,
+            "branch": "master"
         },
         "programs": {
         }
@@ -51,19 +52,65 @@ def create_db():
     file.write_db()
 
 
+def branch_wizard():
+    print("""\n\n
+####WARNING####
+WARNING: You are changing branches of hamstall!
+Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
+Changing from beta to master can lead to extreme problems, as backtracking is not supported!
+
+Switching branches will trigger an immediate update of hamstall!
+
+Select a branch:
+m - Master branch. Less bugs, more stable, wait for updates.
+b - Beta branch. More bugs, less stable, updates asap.
+E - Exit branch wizard and don't change branches.
+    """)
+    ans = generic.get_input("[m/b/E] ", ['m','b','e'], 'e')
+    if ans == 'e':
+        print("Not changing branches!")
+        generic.leave()
+    elif ans == 'm' and file.db["version"]["branch"] == "master":
+        print("Already on the master branch, not switching!")
+        generic.leave()
+    elif ans == 'b' and file.db["version"]["branch"] == "beta":
+        print("Already on the beta branch, not switching!")
+        generic.leave()
+    else:
+        check = input('Type "YES" (without the quotes) to confirm the branch switch!')
+        if check != "YES":
+            print("Cancelling branch switch.")
+            generic.leave()
+        if ans == 'm':
+            branch = "master"
+        elif ans == 'b':
+            branch = "beta"
+        print("Changing branches and updating hamstall!")
+        config.vprint("Switching branch and writing change to file")
+        file.db["version"]["branch"] = branch
+        file.write_db()
+        config.vprint("Updating hamstall...")
+        update(True)
+        generic.leave(0)
+        
+
+
 def configure():
     while True:
         print("""
 Select an option:
 au - Enable/disable the ability to install updates when hamstall is run (requires ac to be enabled)
 v - Enable/disable verbose mode, showing more output when hamstall commands are run
+b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs.
 e - Exit hamstall
         """)
-        option = generic.get_input("[au/v/E] ", ['au', 'v', 'e'], 'e')
+        option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
         if option == 'au':
             config.change_config("AutoInstall", "flip")
         elif option == 'v':
             config.change_config("Verbose", "flip")
+        elif option == 'b':
+            branch_wizard()
         elif option == 'e':
             generic.leave()
 
@@ -253,6 +300,7 @@ def update(silent=False):
     if final_version > prog_version_internal:
         print("An update has been found! Installing...")
         config.vprint('Removing old hamstall pys...')
+        os.chdir(file.full("~/.hamstall"))
         files = os.listdir()
         for i in files:
             i_num = len(i) - 3
@@ -260,6 +308,7 @@ def update(silent=False):
                 os.remove(file.full('~/.hamstall/' + i))
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
+        file.db["version"]["prog_internal_version"] = final_version
     elif final_version < prog_version_internal:
         if not silent:
             print("hamstall version newer than latest online version! Are you using the beta branch?")
@@ -452,7 +501,7 @@ def get_online_version(type_of_replacement):
     if not can_update:
         print("requests library not installed! Exiting...")
         generic.leave(1)
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/master/version"
+    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(file.db["version"]["branch"])
     version_raw = requests.get(version_url)
     version = version_raw.text
     counter = 0
@@ -484,7 +533,7 @@ def download_files(files, folder):
         print("Cannot download files if the request library isn't installed!")
         generic.leave(1)
     for i in files:
-        r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/master/" + i)
+        r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(file.db["version"]["branch"]) + i)
         open(file.full(folder + i), 'wb').write(r.content)
 
 

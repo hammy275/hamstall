@@ -150,11 +150,13 @@ Database structure
 
 {
     "options" : {
-        "Verbose" : True
+        "Verbose" : True,
+        "AutoInstall" : False
     }
     "version" : {
-        "file_version" : 2
-        "prog_internal_version" : 5
+        "file_version" : 2,
+        "prog_internal_version" : 5,
+        "branch" : "master"
     }
     "programs" : {
         "package" : {
@@ -174,9 +176,10 @@ except FileNotFoundError:
 except json.decoder.JSONDecodeError:
     db_check = ""
     while not(db_check in ['y','n']):
-        db_check = input("Database corrupt/unreadable! Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
+        db_check = input("Database is corrupt, unreadable, or in a bad format! "
+        "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
     if db_check == 'y':
         db = {}
     else:
         print("Please check your database! Something is horrendously wrong...")
-        sys.exit(3)
+        sys.exit(1)

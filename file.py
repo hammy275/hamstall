@@ -17,6 +17,7 @@
 import re
 import os
 import json
+import sys
 
 
 def write_db():
@@ -170,3 +171,12 @@ try:
         db = json.load(f)
 except FileNotFoundError:
     db = {}
+except json.decoder.JSONDecodeError:
+    db_check = ""
+    while not(db_check in ['y','n']):
+        db_check = input("Database corrupt/unreadable! Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
+    if db_check == 'y':
+        db = {}
+    else:
+        print("Please check your database! Something is horrendously wrong...")
+        sys.exit(3)

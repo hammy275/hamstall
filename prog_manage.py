@@ -17,6 +17,8 @@
 import os
 from shutil import copyfile, rmtree, move
 from subprocess import call
+import sys
+import re
 
 try:
     import requests
@@ -157,7 +159,9 @@ def create_desktop(program_internal_name):
         print("Desktop file already exists!")
         return
     exec_path = file.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-    comment = input("Please input a comment for the application: ")
+    comment = "/"
+    while not comment.replace(" ", "").isalnum() and comment != "":
+        comment = input("Please input a comment for the application: ")
     if comment == "":
         comment = program_internal_name
     terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
@@ -165,7 +169,11 @@ def create_desktop(program_internal_name):
         should_terminal = "True"
     else:
         should_terminal = "False"
-    name = input("Please enter a name: ")
+    name = "/"
+    while not name.replace(" ", "").isalnum() and name != "":
+        name = input("Please enter a name: ")
+    if name == "":
+        name = program_internal_name
     ans = " "
     chosen_categories = []
     categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office", "science",
@@ -180,8 +188,10 @@ def create_desktop(program_internal_name):
         else:
             ans = ans.capitalize()
             chosen_categories.append(ans)
-            if ans in ["Audio", "Video"]:
+            if ans in ["Audio", "Video"] and not("AudioVideo" in chosen_categories):
                 chosen_categories.append("AudioVideo")
+    if chosen_categories == []:
+        chosen_categories = ["Utility"]
     cats = ";".join(chosen_categories) + ";"  # Get categories for the .desktop
     to_write = """
 [Desktop Entry]
@@ -202,6 +212,10 @@ Categories={categories}
 
 
 def gitinstall(git_url, program_internal_name):
+    config.vprint("Verifying that the input is a URL...")
+    if re.match(r"https://\w.\w", git_url) is None or " " in git_url or "\\" in git_url:
+        print("Invalid URL!")
+        generic.leave()
     config.vprint("Checking for .git extension")
     if file.extension(git_url) != ".git":
         print("The URL must end in .git!")
@@ -210,7 +224,7 @@ def gitinstall(git_url, program_internal_name):
     os.chdir(file.full("~/.hamstall/bin"))
     err = call(["git", "clone", git_url])
     if err != 0:
-        print("Error detected! Install halted.")
+        print("Error detected! Installation halted.")
         generic.leave(1)
     finish_install(program_internal_name)
 
@@ -311,7 +325,7 @@ def update(silent=False):
         file.db["version"]["prog_internal_version"] = final_version
     elif final_version < prog_version_internal:
         if not silent:
-            print("hamstall version newer than latest online version! Are you using the beta branch?")
+            print("hamstall version newer than latest online version! Something might be wrong...")
     else:
         if not silent:
             print("No update found!")
@@ -340,7 +354,8 @@ def erase():
         pass
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
-    generic.leave()
+    config.unlock()
+    sys.exit(0)
 
 
 def first_time_setup(sym):

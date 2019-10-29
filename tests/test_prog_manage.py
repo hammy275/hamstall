@@ -57,13 +57,11 @@ def test_create_db():
     prog_manage.create_db()
     assert file.db == {
         "options": {
-            "Verbose": False,
-            "AutoInstall": False
+            "Verbose": False
         },
         "version": {
             "file_version": config.file_version,
-            "prog_internal_version": config.prog_internal_version,
-            "branch": "master"
+            "prog_internal_version": config.prog_internal_version
         },
         "programs": {
         }

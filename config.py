@@ -21,8 +21,8 @@ import file
 
 ###VERSIONS###
 
-version = "1.1.4"
-prog_internal_version = 9
+version = "1.1.2"
+prog_internal_version = 8
 file_version = 3
 
 #############

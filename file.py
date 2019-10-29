@@ -25,7 +25,12 @@ def write_db():
         with open(full("~/.hamstall/database"), "w") as dbf:
             json.dump(db, dbf)
     except FileNotFoundError:
-        print("Unable to write to database! Are you erasing hamstall?")
+        print(json.dumps(db))
+        print("The hamstall database could not be written to! Something is very wrong...")
+        print("The database has been dumped to the screen; you should keep a copy of it.")
+        print("You may be able to restore hamstall to working order by placing the above" +
+              " database dump into a file called \"database\" in ~/.hamstall")
+        sys.exit(3)
 
 
 def name(program):
@@ -38,13 +43,13 @@ def name(program):
 
 def extension(program):
     """Returns program extension"""
-    if program[((len(program)) - 3):len(program)].lower() == '.7z':
-        return program[((len(program)) - 3):len(program)].lower()
-    elif program[((len(program)) - 4):len(program)].lower() in ['.zip', '.rar', '.git']:
-        return program[((len(program)) - 4):len(program)]
+    if program[-3:].lower() == '.7z':
+        return program[-3:].lower()
+    elif program[-4:].lower() in ['.zip', '.rar', '.git']:
+        return program[-4:]
     else:
-        # Returns the last 7 characters of the provided file name.
-        return program[((len(program)) - 7):len(program)]
+        # Default to returning the last 7 characters
+        return program[-7:]
 
 
 def exists(file_name):
@@ -139,10 +144,7 @@ def add_line(line, file_path):
 
 def char_check(name):
     """Returns if the provided string contains a space or #"""
-    for c in name:
-        if c == ' ' or c == '#':
-            return True
-    return False
+    return ' ' in name or '#' in name
 
 
 """
@@ -175,9 +177,9 @@ except FileNotFoundError:
     db = {}
 except json.decoder.JSONDecodeError:
     db_check = ""
-    while not(db_check in ['y','n']):
+    while not (db_check in ['y', 'n']):
         db_check = input("Database is corrupt, unreadable, or in a bad format! "
-        "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
+                         "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
     if db_check == 'y':
         db = {}
     else:

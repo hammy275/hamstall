@@ -11,6 +11,7 @@ def test_name():
 def test_extension():
     assert file.extension("weeeeee.zip") == ".zip"
     assert file.extension("asdf.tar.gz") == ".tar.gz"
+    assert file.extension("afile.7z") == ".7z"
     assert file.extension("this_is_a_file.that.is.cool.tar.xz") == ".tar.xz"
 
 

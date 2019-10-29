@@ -15,7 +15,7 @@
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import os
-from shutil import copyfile, rmtree, move
+from shutil import copyfile, rmtree, move, which
 from subprocess import call
 import sys
 import re
@@ -68,7 +68,7 @@ m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
     """)
-    ans = generic.get_input("[m/b/E] ", ['m','b','e'], 'e')
+    ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
     if ans == 'e':
         print("Not changing branches!")
         generic.leave()
@@ -94,7 +94,6 @@ E - Exit branch wizard and don't change branches.
         config.vprint("Updating hamstall...")
         update(True)
         generic.leave(0)
-        
 
 
 def configure():
@@ -108,7 +107,10 @@ e - Exit hamstall
         """)
         option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
         if option == 'au':
-            config.change_config("AutoInstall", "flip")
+            if not can_update:
+                print("requests isn't installed, so AutoInstall cannot be enabled!")
+            else:
+                config.change_config("AutoInstall", "flip")
         elif option == 'v':
             config.change_config("Verbose", "flip")
         elif option == 'b':
@@ -125,7 +127,7 @@ def remove_desktop(program):
         for d in file.db["programs"][program]["desktops"]:
             print(d)
         inp = "/ choose desktop"
-        while not(inp in file.db["programs"][program]["desktops"]) and inp != "exit":
+        while not (inp in file.db["programs"][program]["desktops"]) and inp != "exit":
             inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
         try:
             os.remove(file.full("~/.local/share/applications/{}.desktop".format(inp)))
@@ -136,13 +138,16 @@ def remove_desktop(program):
 
 def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
-    file.db["programs"].update({program_internal_name: {"desktops" : []}})
+    file.db["programs"].update({program_internal_name: {"desktops": []}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
     yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
     if yn == 'y':
         binlink(program_internal_name)
+    yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
+    if yn == 'y':
+        create_desktop(program_internal_name)
     print("Install complete!")
     generic.leave()
 
@@ -188,9 +193,9 @@ def create_desktop(program_internal_name):
         else:
             ans = ans.capitalize()
             chosen_categories.append(ans)
-            if ans in ["Audio", "Video"] and not("AudioVideo" in chosen_categories):
+            if ans in ["Audio", "Video"] and not ("AudioVideo" in chosen_categories):
                 chosen_categories.append("AudioVideo")
-    if chosen_categories == []:
+    if not chosen_categories:
         chosen_categories = ["Utility"]
     cats = ";".join(chosen_categories) + ";"  # Get categories for the .desktop
     to_write = """
@@ -304,7 +309,10 @@ def update(silent=False):
     global can_update
     if not can_update:
         print("requests not found! Can't update!")
-        generic.leave(1)
+        if silent:
+            return
+        else:
+            generic.leave(1)
     """Update hamstall after checking for updates"""
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
@@ -340,7 +348,7 @@ def erase():
     file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
     config.vprint("Removing .desktop files")
     for prog in file.db["programs"]:
-        if file.db["programs"][prog]["desktops"] != []:
+        if file.db["programs"][prog]["desktops"]:
             for d in file.db["programs"][prog]["desktops"]:
                 try:
                     os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
@@ -358,6 +366,7 @@ def erase():
     sys.exit(0)
 
 
+# noinspection PyArgumentList
 def first_time_setup(sym):
     """Create hamstall files in ~/.hamstall"""
     if file.exists(file.full('~/.hamstall/hamstall.py')):
@@ -400,7 +409,7 @@ def first_time_setup(sym):
 
 def verbose_toggle():
     """Toggle verbose mode"""
-    config.change_config('Verbose', 'flip', 'N/A')
+    config.change_config('Verbose', 'flip')
 
 
 def install(program):
@@ -439,12 +448,24 @@ def install(program):
             vflag = '-idcdpq '
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
         command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
+        if which("tar") is None:
+            print("tar not installed; please install it to install .tar.gz and .tar.xz files!")
+            generic.leave()
     elif file_extension == '.zip':
         command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
+        if which("unzip") is None:
+            print("unzip not installed; please install it to install ZIP files!")
+            generic.leave()
     elif file_extension == '.7z':
         command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
+        if which("7z") is None:
+            print("7z not installed; please install it to install 7z files!")
+            generic.leave()
     elif file_extension == '.rar':
         command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
+        if which("unrar") is None:
+            print("unrar not installed; please install it to install RAR files!")
+            generic.leave()
     else:
         print('Error! File type not supported!')
         generic.leave(1)
@@ -489,7 +510,7 @@ def uninstall(program):
     config.vprint("Removing program from PATH and any binlinks for the program")
     file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
     config.vprint("Removing program desktop files")
-    if file.db["programs"][program]["desktops"] != []:
+    if file.db["programs"][program]["desktops"]:
         for d in file.db["programs"][program]["desktops"]:
             try:
                 os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
@@ -519,16 +540,11 @@ def get_online_version(type_of_replacement):
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(file.db["version"]["branch"])
     version_raw = requests.get(version_url)
     version = version_raw.text
-    counter = 0
-    for c in version:
-        if c == '.':
-            spot = counter + 1
-            if type_of_replacement == 'file':
-                return int(version[0:spot])
-            elif type_of_replacement == 'prog':
-                return int(version[spot:])
-        else:
-            counter += 1
+    spot = version.find(".")
+    if type_of_replacement == 'file':
+        return int(version[0:spot])
+    elif type_of_replacement == 'prog':
+        return int(version[spot + 1:])
 
 
 def get_file_version(version_type):
@@ -548,7 +564,8 @@ def download_files(files, folder):
         print("Cannot download files if the request library isn't installed!")
         generic.leave(1)
     for i in files:
-        r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(file.db["version"]["branch"]) + i)
+        r = requests.get(
+            "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(file.db["version"]["branch"]) + i)
         open(file.full(folder + i), 'wb').write(r.content)
 
 

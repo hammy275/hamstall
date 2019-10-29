@@ -188,10 +188,8 @@ def create_desktop(program_internal_name):
         else:
             ans = ans.capitalize()
             chosen_categories.append(ans)
-            if ans in ["Audio", "Video"] and not("AudioVideo" in chosen_categories):
+            if ans in ["Audio", "Video"]:
                 chosen_categories.append("AudioVideo")
-    if chosen_categories == []:
-        chosen_categories = ["Utility"]
     cats = ";".join(chosen_categories) + ";"  # Get categories for the .desktop
     to_write = """
 [Desktop Entry]
@@ -325,7 +323,7 @@ def update(silent=False):
         file.db["version"]["prog_internal_version"] = final_version
     elif final_version < prog_version_internal:
         if not silent:
-            print("hamstall version newer than latest online version! Something might be wrong...")
+            print("hamstall version newer than latest online version! Are you using the beta branch?")
     else:
         if not silent:
             print("No update found!")

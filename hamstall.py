@@ -94,18 +94,17 @@ while config.get_version('file_version') > file_version:
         config.vprint("Creating new database")
         file.create("~/.hamstall/database")
         prog_manage.create_db()
-        print("Upgrade complete!")
+        config.vprint("Upgraded from hamstall file version 1 to 2.")
     elif file_version == 2:
         config.vprint("Database needs to have the branch key! Adding...")
         file.db["version"].update({"branch": "master"})
         file.db["version"]["file_version"] = 3
-        file.write_db()
-    else:
-        file.write_db()
+        config.vprint("Upgraded from hamstall file version 2 to 3.")
     try:
         file_version = prog_manage.get_file_version('file')
     except KeyError:
         file_version = 1
+    file.write_db()
 
 if prog_manage.get_file_version('prog') == 1:  # Online update broke between versions 1 and 2 of hamstall
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
@@ -119,13 +118,11 @@ if args.remove_lock:
     generic.leave()
 
 elif args.install is not None:
-    does_archive_exist = file.exists(args.install)
-    if not does_archive_exist:
+    if not file.exists(args.install):
         print("File to install does not exist!")
         generic.leave()
     program_internal_name = file.name(args.install)  # Get the program name
-    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
-    if file_check:  # Reinstall check
+    if program_internal_name in file.db["programs"]:  # Reinstall check
         reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]",
                                       ["y", "n"], "n")  # Ask to reinstall
         if reinstall == "y":
@@ -143,8 +140,7 @@ elif args.gitinstall is not None:
         generic.leave()
     else:
         program_internal_name = file.name(args.gitinstall)
-        file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word') 
-        if file_check:
+        if program_internal_name in file.db["programs"]:
             reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]",
                                           ["y", "n"], "n")  # Ask to reinstall
             if reinstall == "y":
@@ -166,8 +162,7 @@ elif args.dirinstall is not None:
         generic.leave()
     prog_int_name_temp = args.dirinstall[0:len(args.dirinstall)-1]
     program_internal_name = file.name(prog_int_name_temp + '.tar.gz')  # Add .tar.gz to make the original function work
-    file_check = file.check_line(program_internal_name, "~/.hamstall/database", 'word')
-    if file_check:
+    if program_internal_name in file.db["programs"]:
         reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n")
         if reinstall == 'y':
             prog_manage.uninstall(program_internal_name)

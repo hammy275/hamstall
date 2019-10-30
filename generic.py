@@ -32,6 +32,13 @@ def get_input(question, options, default):
         return answer  # Return answer if it isn't the default answer
 
 
+def endi(state):
+    if state:
+        return "enabled"
+    else:
+        return "disabled"
+
+
 def leave(exit_code=0):
     file.write_db()
     config.unlock()

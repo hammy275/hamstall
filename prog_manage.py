@@ -100,23 +100,28 @@ def configure():
     while True:
         print("""
 Select an option:
-au - Enable/disable the ability to install updates when hamstall is run (requires ac to be enabled)
-v - Enable/disable verbose mode, showing more output when hamstall commands are run
-b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs.
+au - Enable/disable the ability to install updates when hamstall is run. Currently {au}.
+v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
+b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
 e - Exit hamstall
-        """)
+        """.format(
+            au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
+            b=file.db["version"]["branch"]
+        ))
         option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
         if option == 'au':
             if not can_update:
                 print("requests isn't installed, so AutoInstall cannot be enabled!")
             else:
-                config.change_config("AutoInstall", "flip")
+                key = "AutoInstall"
         elif option == 'v':
-            config.change_config("Verbose", "flip")
+            key = "Verbose"
         elif option == 'b':
             branch_wizard()
         elif option == 'e':
             generic.leave()
+        new_value = config.change_config(key, "flip")
+        print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
 
 
 def remove_desktop(program):
@@ -158,7 +163,9 @@ def create_desktop(program_internal_name):
     program_file = '/Placeholder/'
     config.vprint("Getting user inputs")
     while program_file not in files:  # Get file to binlink from user
-        program_file = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
+        program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+        if program_file == "exit":
+            return
     desktop_name = "{}-{}".format(program_file, program_internal_name)
     if file.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
@@ -278,7 +285,9 @@ def binlink(program_internal_name):
         print(' '.join(files))
         file_chosen = 'Cool fact. This line was originally written on line 163.'
         while file_chosen not in files:  # Get file to binlink from user
-            file_chosen = input('Please enter a file listed above. If you would like to cancel, press CTRL+C: ')
+            file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+            if file_chosen == "exit":
+                return
         line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/' + program_internal_name) + \
                       '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
         config.vprint("Adding alias to bashrc")
@@ -409,7 +418,8 @@ def first_time_setup(sym):
 
 def verbose_toggle():
     """Toggle verbose mode"""
-    config.change_config('Verbose', 'flip')
+    new_value = config.change_config('Verbose', 'flip')
+    print("Verbose mode {}".format(generic.endi(new_value)))
 
 
 def install(program):

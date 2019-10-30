@@ -170,18 +170,24 @@ Database structure
 }
 """
 
-try:
-    with open(full("~/.hamstall/database")) as f:
-        db = json.load(f)
-except FileNotFoundError:
-    db = {}
-except json.decoder.JSONDecodeError:
-    db_check = ""
-    while not (db_check in ['y', 'n']):
-        db_check = input("Database is corrupt, unreadable, or in a bad format! "
-                         "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
-    if db_check == 'y':
+
+def get_db():
+    try:
+        with open(full("~/.hamstall/database")) as f:
+            db = json.load(f)
+    except FileNotFoundError:
         db = {}
-    else:
-        print("Please check your database! Something is horrendously wrong...")
-        sys.exit(1)
+    except json.decoder.JSONDecodeError:
+        db_check = ""
+        while not (db_check in ['y', 'n']):
+            db_check = input("Database is corrupt, unreadable, or in a bad format! "
+                            "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
+        if db_check == 'y':
+            db = {}
+        else:
+            print("Please check your database! Something is horrendously wrong...")
+            sys.exit(1)
+    return db
+
+
+db = get_db()

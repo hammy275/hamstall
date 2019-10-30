@@ -22,7 +22,7 @@ import file
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 11
+prog_internal_version = 12
 file_version = 3
 
 #############
@@ -45,13 +45,17 @@ def change_config(key, mode, value=None):
     if mode == 'flip':
         try:
             file.db["options"][key] = not (file.db["options"][key])
+            return file.db["options"][key]
         except KeyError:  # All config values are False by default, so this should make them True.
             file.db["options"].update({key: True})
+            return True
     elif mode == 'change':
         try:
             file.db["options"][key] = value
+            return value
         except KeyError:
             file.db["options"].update({key: value})
+            return value
     file.write_db()
 
 

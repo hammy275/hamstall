@@ -31,21 +31,8 @@ except ImportError:
     print("`python3 -m pip install requests` to install it!")
     print("###########################")
 
-import file
 import config
 import generic
-
-
-def get_shell_file():
-    config.vprint("Auto-detecting shell")
-    shell = os.environ["SHELL"]
-    if "bash" in shell:
-        return ".bashrc"
-    elif "zsh" in shell:
-        return ".zshrc"
-    else:
-        config.vprint("Couldn't auto-detect shell environment! Defaulting to bash...")
-        return ".bashrc"
 
 
 def create_db():
@@ -53,7 +40,7 @@ def create_db():
         "options": {
             "Verbose": False,
             "AutoInstall": False,
-            "ShellFile": get_shell_file()
+            "ShellFile": config.get_shell_file()
         },
         "version": {
             "file_version": config.file_version,
@@ -63,8 +50,8 @@ def create_db():
         "programs": {
         }
     }
-    file.db = db_template
-    file.write_db()
+    config.db = db_template
+    config.write_db()
 
 
 def branch_wizard():
@@ -85,10 +72,10 @@ E - Exit branch wizard and don't change branches.
     if ans == 'e':
         print("Not changing branches!")
         generic.leave()
-    elif ans == 'm' and file.db["version"]["branch"] == "master":
+    elif ans == 'm' and config.db["version"]["branch"] == "master":
         print("Already on the master branch, not switching!")
         generic.leave()
-    elif ans == 'b' and file.db["version"]["branch"] == "beta":
+    elif ans == 'b' and config.db["version"]["branch"] == "beta":
         print("Already on the beta branch, not switching!")
         generic.leave()
     else:
@@ -102,8 +89,8 @@ E - Exit branch wizard and don't change branches.
             branch = "beta"
         print("Changing branches and updating hamstall!")
         config.vprint("Switching branch and writing change to file")
-        file.db["version"]["branch"] = branch
-        file.write_db()
+        config.db["version"]["branch"] = branch
+        config.write_db()
         config.vprint("Updating hamstall...")
         update(True)
         generic.leave(0)
@@ -119,7 +106,7 @@ b - Swap branches in hamstall. Allows you to get updates sooner at the cost of p
 e - Exit hamstall
         """.format(
             au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
-            b=file.db["version"]["branch"]
+            b=config.db["version"]["branch"]
         ))
         option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
         if option == 'au':
@@ -138,25 +125,25 @@ e - Exit hamstall
 
 
 def remove_desktop(program):
-    if not file.db["programs"][program]["desktops"]:
+    if not config.db["programs"][program]["desktops"]:
         print("Program has no .desktop files!")
     else:
         print("Desktops: ")
-        for d in file.db["programs"][program]["desktops"]:
+        for d in config.db["programs"][program]["desktops"]:
             print(d)
         inp = "/ choose desktop"
-        while not (inp in file.db["programs"][program]["desktops"]) and inp != "exit":
+        while not (inp in config.db["programs"][program]["desktops"]) and inp != "exit":
             inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
         try:
-            os.remove(file.full("~/.local/share/applications/{}.desktop".format(inp)))
+            os.remove(config.full("~/.local/share/applications/{}.desktop".format(inp)))
         except FileNotFoundError:
             pass
-        file.db["programs"][program]["desktops"].remove(inp)
+        config.db["programs"][program]["desktops"].remove(inp)
 
 
 def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
-    file.db["programs"].update({program_internal_name: {"desktops": []}})
+    config.db["programs"].update({program_internal_name: {"desktops": []}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -171,7 +158,7 @@ def finish_install(program_internal_name):
 
 
 def create_desktop(program_internal_name):
-    files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
+    files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
     print(' '.join(files))
     program_file = '/Placeholder/'
     config.vprint("Getting user inputs")
@@ -180,10 +167,10 @@ def create_desktop(program_internal_name):
         if program_file == "exit":
             return
     desktop_name = "{}-{}".format(program_file, program_internal_name)
-    if file.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
+    if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
         return
-    exec_path = file.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
     comment = "/"
     while not comment.replace(" ", "").isalnum() and comment != "":
         comment = input("Please input a comment for the application: ")
@@ -228,11 +215,11 @@ Type=Application
 Categories={categories}
 """.format(name=name, comment=comment, exec_path=exec_path,
            should_terminal=should_terminal, categories=cats)
-    os.chdir(file.full("~/.local/share/applications/"))
-    file.create("./{}.desktop".format(desktop_name))
-    with open(file.full("./{}.desktop".format(desktop_name)), 'w') as f:
+    os.chdir(config.full("~/.local/share/applications/"))
+    config.create("./{}.desktop".format(desktop_name))
+    with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
-    file.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+    config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
     print("\nDesktop file created!")
 
 
@@ -242,11 +229,11 @@ def gitinstall(git_url, program_internal_name):
         print("Invalid URL!")
         generic.leave()
     config.vprint("Checking for .git extension")
-    if file.extension(git_url) != ".git":
+    if config.extension(git_url) != ".git":
         print("The URL must end in .git!")
         generic.leave(1)
     config.vprint("Downloading git repository")
-    os.chdir(file.full("~/.hamstall/bin"))
+    os.chdir(config.full("~/.hamstall/bin"))
     err = call(["git", "clone", git_url])
     if err != 0:
         print("Error detected! Installation halted.")
@@ -276,7 +263,7 @@ def manage(program):
             uninstall(program)
             generic.leave()
         elif option == 'r':
-            file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+            config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
         elif option == 'd':
             create_desktop(program)
         elif option == 'rd':
@@ -285,7 +272,7 @@ def manage(program):
             command(program)
         elif option == 's':
             print("When you exit the shell, you will be returned to here.")
-            os.chdir(file.full("~/.hamstall/bin/" + program + "/"))
+            os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
             call(["/bin/bash"])
         elif option == 'e':
             generic.leave()
@@ -294,17 +281,17 @@ def manage(program):
 def binlink(program_internal_name):
     """Creates an alias to run a program from its directory"""
     while True:
-        files = os.listdir(file.full('~/.hamstall/bin/' + program_internal_name + '/'))
+        files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
         print(' '.join(files))
         file_chosen = 'Cool fact. This line was originally written on line 163.'
         while file_chosen not in files:  # Get file to binlink from user
             file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
             if file_chosen == "exit":
                 return
-        line_to_add = 'alias ' + file_chosen + "='cd " + file.full('~/.hamstall/bin/' + program_internal_name) + \
+        line_to_add = 'alias ' + file_chosen + "='cd " + config.full('~/.hamstall/bin/' + program_internal_name) + \
                       '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
         config.vprint("Adding alias to bashrc")
-        file.add_line(line_to_add, "~/.hamstall/.bashrc")
+        config.add_line(line_to_add, "~/.hamstall/.bashrc")
         yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
         if yn == 'n':
             return
@@ -314,7 +301,7 @@ def pathify(program_internal_name):
     """Adds an installed program to PATH"""
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-    file.add_line(line_to_write, "~/.hamstall/.bashrc")
+    config.add_line(line_to_write, "~/.hamstall/.bashrc")
     return
 
 
@@ -343,15 +330,15 @@ def update(silent=False):
     if final_version > prog_version_internal:
         print("An update has been found! Installing...")
         config.vprint('Removing old hamstall pys...')
-        os.chdir(file.full("~/.hamstall"))
+        os.chdir(config.full("~/.hamstall"))
         files = os.listdir()
         for i in files:
             i_num = len(i) - 3
             if i[i_num:len(i)] == '.py':
-                os.remove(file.full('~/.hamstall/' + i))
+                os.remove(config.full('~/.hamstall/' + i))
         config.vprint("Downloading new hamstall pys..")
-        download_files(['hamstall.py', 'generic.py', 'file.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
-        file.db["version"]["prog_internal_version"] = final_version
+        download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
+        config.db["version"]["prog_internal_version"] = final_version
     elif final_version < prog_version_internal:
         if not silent:
             print("hamstall version newer than latest online version! Something might be wrong...")
@@ -362,21 +349,21 @@ def update(silent=False):
 
 def erase():
     """Remove hamstall"""
-    if not (file.exists(file.full("~/.hamstall/hamstall.py"))):
+    if not (config.exists(config.full("~/.hamstall/hamstall.py"))):
         print("hamstall not detected so not removed!")
         generic.leave()
     config.vprint('Removing source line from bashrc')
-    file.remove_line("~/.hamstall/.bashrc", "~/{}".format(file.db["options"]["ShellFile"]), "word")
+    config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
     config.vprint("Removing .desktop files")
-    for prog in file.db["programs"]:
-        if file.db["programs"][prog]["desktops"]:
-            for d in file.db["programs"][prog]["desktops"]:
+    for prog in config.db["programs"]:
+        if config.db["programs"][prog]["desktops"]:
+            for d in config.db["programs"][prog]["desktops"]:
                 try:
-                    os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
+                    os.remove(config.full("~/.local/share/applications/{}.desktop".format(d)))
                 except FileNotFoundError:
                     pass
     config.vprint('Removing hamstall directory')
-    rmtree(file.full('~/.hamstall'))
+    rmtree(config.full('~/.hamstall'))
     try:
         rmtree("/tmp/hamstall-temp")
     except FileNotFoundError:
@@ -389,40 +376,40 @@ def erase():
 
 def first_time_setup(sym):
     """Create hamstall files in ~/.hamstall"""
-    if file.exists(file.full('~/.hamstall/hamstall.py')):
+    if config.exists(config.full('~/.hamstall/hamstall.py')):
         print('Please don\'t run first time setup on an already installed system!')
         generic.leave()
     print('Installing hamstall to your system...')
     try:
-        os.mkdir(file.full("~/.hamstall"))
+        os.mkdir(config.full("~/.hamstall"))
     except FileExistsError:
-        rmtree(file.full("~/.hamstall"))
-        os.mkdir(file.full("~/.hamstall"))
+        rmtree(config.full("~/.hamstall"))
+        os.mkdir(config.full("~/.hamstall"))
     try:
-        os.mkdir(file.full("/tmp/hamstall-temp/"))
+        os.mkdir(config.full("/tmp/hamstall-temp/"))
     except FileExistsError:
-        rmtree(file.full("/tmp/hamstall-temp"))
-        os.mkdir(file.full("/tmp/hamstall-temp/"))
-    os.mkdir(file.full("~/.hamstall/bin"))
-    file.create("~/.hamstall/database")
+        rmtree(config.full("/tmp/hamstall-temp"))
+        os.mkdir(config.full("/tmp/hamstall-temp/"))
+    os.mkdir(config.full("~/.hamstall/bin"))
+    config.create("~/.hamstall/database")
     create_db()
-    file.create("~/.hamstall/.bashrc")  # Create directories and files
+    config.create("~/.hamstall/.bashrc")  # Create directories and files
     files = os.listdir()
     for i in files:
         i_num = len(i) - 3
         if i[i_num:len(i)] == '.py':
             if sym:
-                os.symlink(os.getcwd() + "/" + i, file.full("~/.hamstall/" + i))
+                os.symlink(os.getcwd() + "/" + i, config.full("~/.hamstall/" + i))
             else:
                 try:
-                    copyfile(i, file.full('~/.hamstall/' + i))
+                    copyfile(i, config.full('~/.hamstall/' + i))
                 except FileNotFoundError:
                     print("A file is missing that was attempted to be copied! Install halted!")
                     generic.leave(1)
-    file.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(file.db["options"]["ShellFile"]))
-    file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
+    config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
+    config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
     print('First time setup complete!')
-    print('Please run the command "source ~/{}" or restart your terminal.'.format(file.db["options"]["ShellFile"]))
+    print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
     print('Afterwards, you may begin using hamstall with the hamstall command!')
     generic.leave()
 
@@ -435,20 +422,20 @@ def verbose_toggle():
 
 def install(program):
     """Install an archive"""
-    program_internal_name = file.name(program)
-    if file.char_check(program_internal_name):
+    program_internal_name = config.name(program)
+    if config.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
         generic.leave(1)
     config.vprint("Removing old temp directory (if it exists!)")
     try:
-        rmtree(file.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+        rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
     except FileNotFoundError:
         config.vprint("Temp directory did not exist!")
     config.vprint("Creating new temp directory")
-    os.mkdir(file.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
+    os.mkdir(config.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
     config.vprint("Extracting archive to temp directory")
-    file_extension = file.extension(program)
-    program = file.spaceify(program)
+    file_extension = config.extension(program)
+    program = config.spaceify(program)
     if config.vcheck():  # Creates the command to run to extract the archive
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             vflag = 'v'
@@ -498,20 +485,20 @@ def install(program):
         print("Program installation halted!")
         generic.leave(1)
     config.vprint('Checking for folder in folder')
-    if os.path.isdir(file.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
+    if os.path.isdir(config.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
-        source = file.full('/tmp/hamstall-temp/' + program_internal_name + '/')
-        dest = file.full('~/.hamstall/bin/')
+        source = config.full('/tmp/hamstall-temp/' + program_internal_name + '/')
+        dest = config.full('~/.hamstall/bin/')
     else:
         config.vprint('Folder in folder not detected!')
-        source = file.full('/tmp/hamstall-temp')
-        dest = file.full('~/.hamstall/bin/' + program_internal_name)
+        source = config.full('/tmp/hamstall-temp')
+        dest = config.full('~/.hamstall/bin/' + program_internal_name)
     config.vprint("Moving program to directory")
     move(source, dest)
     config.vprint("Adding program to hamstall list of programs")
     config.vprint('Removing old temp directory...')
     try:
-        rmtree(file.full("/tmp/hamstall-temp"))
+        rmtree(config.full("/tmp/hamstall-temp"))
     except FileNotFoundError:
         config.vprint('Temp folder not found so not deleted!')
     finish_install(program_internal_name)
@@ -520,32 +507,32 @@ def install(program):
 def dirinstall(program_path, program_internal_name):
     """Install a directory"""
     config.vprint("Moving folder to hamstall destination")
-    move(program_path, file.full("~/.hamstall/bin/"))
+    move(program_path, config.full("~/.hamstall/bin/"))
     finish_install(program_internal_name)
 
 
 def uninstall(program):
     """Uninstall a program"""
     config.vprint("Removing program files")
-    rmtree(file.full("~/.hamstall/bin/" + program + '/'))
+    rmtree(config.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH and any binlinks for the program")
-    file.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
     config.vprint("Removing program desktop files")
-    if file.db["programs"][program]["desktops"]:
-        for d in file.db["programs"][program]["desktops"]:
+    if config.db["programs"][program]["desktops"]:
+        for d in config.db["programs"][program]["desktops"]:
             try:
-                os.remove(file.full("~/.local/share/applications/{}.desktop".format(d)))
+                os.remove(config.full("~/.local/share/applications/{}.desktop".format(d)))
             except FileNotFoundError:
                 pass
     config.vprint("Removing program from hamstall list of programs")
-    del file.db["programs"][program]
+    del config.db["programs"][program]
     print("Uninstall complete!")
     return
 
 
 def list_programs():
     """List all installed programs"""
-    for prog in file.db["programs"].keys():
+    for prog in config.db["programs"].keys():
         print(prog)
     generic.leave()
 
@@ -557,7 +544,7 @@ def get_online_version(type_of_replacement):
     if not can_update:
         print("requests library not installed! Exiting...")
         generic.leave(1)
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(file.db["version"]["branch"])
+    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(config.db["version"]["branch"])
     version_raw = requests.get(version_url)
     version = version_raw.text
     spot = version.find(".")
@@ -572,9 +559,9 @@ def get_file_version(version_type):
     prog - Program version
     file - .hamstall folder version"""
     if version_type == 'file':
-        return file.db["version"]["file_version"]
+        return config.db["version"]["file_version"]
     elif version_type == 'prog':
-        return file.db["version"]["prog_internal_version"]
+        return config.db["version"]["prog_internal_version"]
 
 
 def download_files(files, folder):
@@ -584,8 +571,8 @@ def download_files(files, folder):
         generic.leave(1)
     for i in files:
         r = requests.get(
-            "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(file.db["version"]["branch"]) + i)
-        open(file.full(folder + i), 'wb').write(r.content)
+            "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(config.db["version"]["branch"]) + i)
+        open(config.full(folder + i), 'wb').write(r.content)
 
 
 verbose = config.vcheck()

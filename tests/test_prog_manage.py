@@ -46,6 +46,12 @@ def test_create_desktop(monkeypatch):
     assert file.exists("~/.local/share/applications/test.sh-package.desktop")
 
 
+def test_remove_desktop(monkeypatch):
+    monkeypatch.setattr("sys.stdin", StringIO("test.sh-package"))
+    prog_manage.remove_desktop("package")
+    assert not file.exists("~/.local/share/applications/test.sh-package.desktop")
+
+
 def test_uninstall():
     prog_manage.uninstall("package")
     assert file.check_line("export PATH=$PATH:~/.hamstall/bin/package # package", "~/.hamstall/.bashrc",
@@ -55,10 +61,12 @@ def test_uninstall():
 
 def test_create_db():
     prog_manage.create_db()
+    #TODO: Fake os so we can test get_shell_file in any environment
     assert file.db == {
         "options": {
             "Verbose": False,
-            "AutoInstall": False
+            "AutoInstall": False,
+            "ShellFile": prog_manage.get_shell_file()
         },
         "version": {
             "file_version": config.file_version,

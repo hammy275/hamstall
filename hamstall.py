@@ -100,6 +100,11 @@ while config.get_version('file_version') > file_version:
         file.db["version"].update({"branch": "master"})
         file.db["version"]["file_version"] = 3
         config.vprint("Upgraded from hamstall file version 2 to 3.")
+    elif file_version == 3:
+        config.vprint("Database needs to have the shell key! Adding...")
+        file.db["options"].update({"ShellFile": prog_manage.get_shell_file()})
+        file.db["version"]["file_version"] = 4
+        config.vprint("Upgraded from hamstall file version 3 to 4.")
     try:
         file_version = prog_manage.get_file_version('file')
     except KeyError:

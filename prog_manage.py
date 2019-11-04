@@ -36,11 +36,24 @@ import config
 import generic
 
 
+def get_shell_file():
+    config.vprint("Auto-detecting shell")
+    shell = os.environ["SHELL"]
+    if "bash" in shell:
+        return ".bashrc"
+    elif "zsh" in shell:
+        return ".zshrc"
+    else:
+        config.vprint("Couldn't auto-detect shell environment! Defaulting to bash...")
+        return ".bashrc"
+
+
 def create_db():
     db_template = {
         "options": {
             "Verbose": False,
-            "AutoInstall": False
+            "AutoInstall": False,
+            "ShellFile": get_shell_file()
         },
         "version": {
             "file_version": config.file_version,
@@ -353,7 +366,7 @@ def erase():
         print("hamstall not detected so not removed!")
         generic.leave()
     config.vprint('Removing source line from bashrc')
-    file.remove_line("~/.hamstall/.bashrc", "~/.bashrc", "word")
+    file.remove_line("~/.hamstall/.bashrc", "~/{}".format(file.db["options"]["ShellFile"]), "word")
     config.vprint("Removing .desktop files")
     for prog in file.db["programs"]:
         if file.db["programs"][prog]["desktops"]:
@@ -374,7 +387,6 @@ def erase():
     sys.exit(0)
 
 
-# noinspection PyArgumentList
 def first_time_setup(sym):
     """Create hamstall files in ~/.hamstall"""
     if file.exists(file.full('~/.hamstall/hamstall.py')):
@@ -407,10 +419,10 @@ def first_time_setup(sym):
                 except FileNotFoundError:
                     print("A file is missing that was attempted to be copied! Install halted!")
                     generic.leave(1)
-    file.add_line("source ~/.hamstall/.bashrc\n", "~/.bashrc")
+    file.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(file.db["options"]["ShellFile"]))
     file.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
     print('First time setup complete!')
-    print('Please run the command "source ~/.bashrc" or restart your terminal.')
+    print('Please run the command "source ~/{}" or restart your terminal.'.format(file.db["options"]["ShellFile"]))
     print('Afterwards, you may begin using hamstall with the hamstall command!')
     generic.leave()
 

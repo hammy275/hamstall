@@ -1,11 +1,33 @@
 import file
+import prog_manage
+import config
 import json
+
+
+def test_get_db():
+    assert file.get_db() == {
+        "options": {
+            "Verbose": False,
+            "AutoInstall": False,
+            "ShellFile": prog_manage.get_shell_file()
+        },
+        "version": {
+            "file_version": config.file_version,
+            "prog_internal_version": config.prog_internal_version,
+            "branch": "master"
+        },
+        "programs": {
+            "package": {
+                "desktops": []
+            }
+        }
+    }
 
 
 def test_name():
     assert file.name("/some/directory/file.tar.gz") == "file"
     assert file.name("~/i/was/home/but/now/im/here.zip") == "here"
-    assert file.name("/tar/xz/files/are/pretty/cool.tar.xz") == "cool"
+    assert file.name("./tar/xz/files/are/pretty/cool.tar.xz") == "cool"
 
 
 def test_extension():

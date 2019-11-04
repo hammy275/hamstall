@@ -152,12 +152,12 @@ Database structure
 
 {
     "options" : {
-        "Verbose" : True,
+        "Verbose" : False,
         "AutoInstall" : False
     }
     "version" : {
-        "file_version" : 2,
-        "prog_internal_version" : 5,
+        "file_version" : config.file_version,
+        "prog_internal_version" : config.prog_internal_version,
         "branch" : "master"
     }
     "programs" : {

@@ -273,7 +273,7 @@ def manage(program):
         elif option == 's':
             print("When you exit the shell, you will be returned to here.")
             os.chdir(file.full("~/.hamstall/bin/" + program + "/"))
-            os.system("/bin/bash")
+            call(["/bin/bash"])
         elif option == 'e':
             generic.leave()
 
@@ -309,13 +309,12 @@ def command(program):
     run = 'y'
     while run == 'y':
         command = input('Please enter a command: ')
-        os.system("cd ~/.hamstall/bin/" + program + "/ && " + command)
+        call(["cd", "~/.hamstall/bin/{}/".format(program), "&&", command])
         run = generic.get_input('Would you like to run another command? [y/N]', ['y', 'n'], 'n')
     return
 
 
 def update(silent=False):
-    global can_update
     if not can_update:
         print("requests not found! Can't update!")
         if silent:
@@ -540,7 +539,6 @@ def list_programs():
 
 
 def get_online_version(type_of_replacement):
-    global can_update
     """Get current version of hamstall through GitHub
     prog - Program version
     file - .hamstall folder version"""
@@ -569,7 +567,6 @@ def get_file_version(version_type):
 
 def download_files(files, folder):
     """Downloads a list of files and writes them"""
-    global can_update
     if not can_update:
         print("Cannot download files if the request library isn't installed!")
         generic.leave(1)

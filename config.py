@@ -22,7 +22,7 @@ import file
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 12
+prog_internal_version = 13
 file_version = 3
 
 #############

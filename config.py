@@ -29,6 +29,15 @@ file_version = 5
 
 
 def get_shell_file():
+    """Get Shell File.
+
+    Attempts to automatically obtain the file used by the user's shell for PATH,
+    variable exporting, etc.
+
+    Returns:
+        str: File name in home directory to store PATHs, variables, etc.
+
+    """
     vprint("Auto-detecting shell")
     shell = os.environ["SHELL"]
     if "bash" in shell:
@@ -41,7 +50,14 @@ def get_shell_file():
 
 
 def read_config(key):
-    """Gets the value stored in ~/.hamstall/config for the given key"""
+    """Read config value.
+
+    Gets the value stored in ~/.hamstall/config for the given key
+
+    Returns:
+        Any type: The value found at the key supplied
+
+"""
     try:
         return db["options"][key]
     except KeyError:
@@ -55,7 +71,19 @@ def read_config(key):
 
 
 def change_config(key, mode, value=None):
-    """Flips a value in the config between true and false"""
+    """Change Config Value.
+
+    Flips a value in the config between true and false
+
+    Args:
+        key (str): Key to change the value of
+        mode (str): flip or change. Determines the mode to use for changing the key's value.
+        value (any): When using change, this is value to change the key to. Defaults to None.
+
+    Returns:
+        Any type: Value the key was changed to
+
+    """
     if mode == 'flip':
         try:
             db["options"][key] = not (db["options"][key])
@@ -74,7 +102,12 @@ def change_config(key, mode, value=None):
 
 
 def vcheck():
-    """Returns if Verbose=True in the config"""
+    """Is Verbose.
+
+    Returns:
+        bool: Whether or not we are verbose
+
+    """
     return read_config('Verbose')
 
 
@@ -86,10 +119,14 @@ def vprint(to_print):
 
 
 def get_version(version_type):
-    """Return version numbers of scripts
-    prog_internal_version - Version as used by GitHub for updating
-    file_version - Version that should match with the .hamstall directory
-    version - Version displayed to end user.
+    """Get Script Version.
+
+    Args:
+        version_type (str): prog_internal_version/file_version/version to get the program/file/end-user version
+
+    Returns:
+        str/int: Version of the type specified. Int for prog/file and str for version.
+
     """
     if version_type == 'prog_internal_version':
         return prog_internal_version
@@ -100,11 +137,17 @@ def get_version(version_type):
 
 
 def lock():
+    """Lock hamstall.
+
+    Lock hamstall to prevent multiple instances of hamstall being used alongside each other
+
+    """
     create("/tmp/hamstall-lock")
     vprint("Lock created!")
 
 
 def unlock():
+    """Remove hamstall lock."""
     try:
         os.remove(full("/tmp/hamstall-lock"))
     except FileNotFoundError:
@@ -113,10 +156,21 @@ def unlock():
 
 
 def locked():
+    """Get Lock State.
+
+    Returns:
+        bool: True if hamstall is locked. False otherwise.
+
+    """
     return os.path.isfile(full("/tmp/hamstall-lock"))
 
 
 def write_db():
+    """Write Database.
+
+    Writes the database to file
+
+    """
     try:
         with open(full("~/.hamstall/database"), "w") as dbf:
             json.dump(db, dbf)
@@ -130,7 +184,17 @@ def write_db():
 
 
 def name(program):
-    """Returns name of program"""
+    """Get Program Name.
+
+    Get the name of a program given the path to its archive/folder.
+
+    Args:
+        program (str): Path to program archive/folder
+
+    Returns:
+        str: Name of program to use internally
+
+    """
     program_internal_name = re.sub(r'.*/', '/', program)
     extension_length = len(extension(program))  # Get extension length
     program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
@@ -138,7 +202,15 @@ def name(program):
 
 
 def extension(program):
-    """Returns program extension"""
+    """Get Extension of Program.
+
+    Args:
+        program (str): File name of program or URL/path to program.
+
+    Returns:
+        str: Extension of program
+
+    """
     if program[-3:].lower() == '.7z':
         return program[-3:].lower()
     elif program[-4:].lower() in ['.zip', '.rar', '.git']:
@@ -149,7 +221,15 @@ def extension(program):
 
 
 def exists(file_name):
-    """Returns if file exists"""
+    """Check if File Exists.
+
+    Args:
+        file_name (str): Path to file
+
+    Returns:
+        bool: Whether the file exists or not
+
+    """
     try:
         return os.path.isfile(full(file_name))
     except FileNotFoundError:
@@ -157,12 +237,32 @@ def exists(file_name):
 
 
 def full(file_name):
-    """Returns program with corrected ~ to /home/user"""
+    """Full Path.
+
+    Converts ~'s, .'s, and ..'s to their full paths (~ to /home/username)
+
+    Args:
+        file_name (str): Path to convert
+
+    Returns:
+        str: Converted path
+
+    """
     return os.path.abspath(os.path.expanduser(file_name))
 
 
 def spaceify(file_name):
-    """Adds a backslash before every space for bash"""
+    """Add Backslashes.
+
+    Adds backslashes before each space in a path.
+
+    Args:
+        file_name (str): Path to add backslashes to
+    
+    Returns:
+        str: The path with backslashes
+
+    """
     char_list = []
     for c in file_name:
         if c == ' ':
@@ -175,10 +275,21 @@ def spaceify(file_name):
 
 
 def check_line(line, file_path, mode):
-    """Returns if a line exists in a file
-    word - Turns each line into a list where each item is separated by
-    spaces, then checks each list to see if it finds the word.
-    fuzzy - Checks if the provided string is in the line anywhere."""
+    """Check for Line.
+
+    Checks to see if a line is inside of a file. Modes are:
+    word: Split all lines into a list of WORDS, and check to see if the word supplied is in that list
+    fuzzy: Check if the supplied line is in the file, even if it doesn't make up the whole line.
+
+    Args:
+        line (str): Line/word to look for
+        file_path (str): Path to file to look for the line/word in
+        mode (str): Mode to search with
+
+    Returns:
+        bool: Whether or not the line/word is in the file
+
+    """
     f = open(full(file_path), 'r')
     open_file = f.readlines()
     f.close()
@@ -194,17 +305,29 @@ def check_line(line, file_path, mode):
 
 
 def create(file_path):
-    """Creates an empty file"""
+    """Create Empty File.
+    
+    Args:
+        file_path (str): Path to file to create
+    """
     f = open(full(file_path), "w+")
     f.close()
 
 
 def remove_line(line, file_path, mode):
-    """Removes a line from a file
-    word - Turns each line into a list where each item is separated by
-    spaces, then checks each list to see if it finds the word.
-    poundword - Same as word but also checks if there is a #.
-    fuzzy - Checks if the provided string is in the line anywhere."""
+    """Remove Line from File.
+
+    Removes a line from a file. Uses the following modes:
+    word: Removes line if supplied word is found in it (words are sets of chars seperated by spaces)
+    poundword: Same as word, but line must also contain a #
+    fuzzy: Removes line, matching with supplied line, even if the line being removed has more than the supplied line
+
+    Args:
+        line (str)): Line/word to remove
+        file_path (str): Path to file to remove lines from
+        mode (str): Mode to use to find lines to remove
+
+    """
     rewrite = """"""
     file_path = full(file_path)
     f = open(file_path, 'r')
@@ -230,16 +353,22 @@ def remove_line(line, file_path, mode):
 
 
 def add_line(line, file_path):
-    """Adds a line to a file"""
+    """Adds Line to a File."""
     file_path = full(file_path)
     f = open(file_path, 'a')
     f.write(line)
     f.close()
-    return
 
 
 def char_check(name):
-    """Returns if the provided string contains a space or #"""
+    """Check Chars.
+
+    Checks if a string contains a # or a space.
+
+    Returns:
+        bool: True if line contains space or #; False otherwise
+
+    """
     return ' ' in name or '#' in name
 
 
@@ -268,6 +397,12 @@ Database structure
 
 
 def get_db():
+    """Get Database.
+
+    Returns:
+        dict: Database. {} if database fails to be read or found on disk.
+
+    """
     try:
         with open(full("~/.hamstall/database")) as f:
             db = json.load(f)

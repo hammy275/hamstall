@@ -19,8 +19,19 @@ import config
 
 
 def get_input(question, options, default):
-    """input() but supports a default answer and
-    makes sure input is acceptable"""
+    """Get User Input.
+
+    Get user input, except make sure the input provided matches one of the options we're looking for
+
+    Args:
+        question (str): Question to ask the user
+        options (str[]): List of options the user can choose from
+        default (str): Default option (used when user enters nothing)
+
+    Returns:
+        str: Option the user chose
+
+    """
     answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
     while answer not in options and answer != "":
         answer = input(question)
@@ -32,6 +43,15 @@ def get_input(question, options, default):
 
 
 def endi(state):
+    """Bool to String.
+
+    Args:
+        state (bool): Bool to convert
+
+    Returns:
+        str: "enabled" if True, "disabled" if False
+
+    """
     if state:
         return "enabled"
     else:
@@ -39,6 +59,13 @@ def endi(state):
 
 
 def leave(exit_code=0):
+    """Exit Program.
+
+    Leaves the program after writing the database and removing the lock.
+
+    Args:
+        exit_code (int): Exit code. Defaults to 0.
+    """
     config.write_db()
     config.unlock()
     sys.exit(exit_code)

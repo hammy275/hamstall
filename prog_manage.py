@@ -36,6 +36,7 @@ import generic
 
 
 def create_db():
+    """Creates Database."""
     db_template = {
         "options": {
             "Verbose": False,
@@ -55,6 +56,7 @@ def create_db():
 
 
 def branch_wizard():
+    """Switch Branches."""
     print("""\n\n
 ####WARNING####
 WARNING: You are changing branches of hamstall!
@@ -97,6 +99,7 @@ E - Exit branch wizard and don't change branches.
 
 
 def configure():
+    """Change hamstall Options."""
     while True:
         print("""
 Select an option:
@@ -125,6 +128,12 @@ e - Exit hamstall
 
 
 def remove_desktop(program):
+    """Remove .desktop
+
+    Removes a .desktop file assosciated with a program and its corresponding entry in the database
+    This process is walked through with the end-user
+
+    """
     if not config.db["programs"][program]["desktops"]:
         print("Program has no .desktop files!")
     else:
@@ -142,6 +151,14 @@ def remove_desktop(program):
 
 
 def finish_install(program_internal_name):
+    """End of Install.
+
+    Ran after every program install.
+
+    Args:
+        program_internal_name (str): Name of program as stored in the database
+
+    """
     config.vprint("Adding program to hamstall list of programs")
     config.db["programs"].update({program_internal_name: {"desktops": []}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
@@ -158,6 +175,14 @@ def finish_install(program_internal_name):
 
 
 def create_desktop(program_internal_name):
+    """Create Desktop.
+
+    Walks the user through creating a .desktop file for a program
+
+    Args:
+        program_internal_name (str): Name of program as stored in the database
+
+    """
     files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
     print(' '.join(files))
     program_file = '/Placeholder/'
@@ -224,6 +249,15 @@ Categories={categories}
 
 
 def gitinstall(git_url, program_internal_name):
+    """Git Install.
+
+    Installs a program from a URL to a Git repository
+
+    Args:
+        git_url (str): URL to Git repository
+        program_internal_name (str): Name of program to use
+
+    """
     config.vprint("Verifying that the input is a URL...")
     if re.match(r"https://\w.\w", git_url) is None or " " in git_url or "\\" in git_url:
         print("Invalid URL!")
@@ -242,7 +276,12 @@ def gitinstall(git_url, program_internal_name):
 
 
 def manage(program):
-    """Manage an already installed program"""
+    """Manage Installed Program.
+
+    Args:
+        program (str): Internal name of program to manage
+
+    """
     while True:
         print("Enter an option to manage " + program + ":")
         print("b - Create binlinks for " + program)
@@ -279,7 +318,14 @@ def manage(program):
 
 
 def binlink(program_internal_name):
-    """Creates an alias to run a program from its directory"""
+    """Link Program
+
+    Creates an alias that cd's into a program directory before running a file in the program
+
+    Args:
+        program_internal_name (str): Name of program to create a binlink for
+
+    """
     while True:
         files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
         print(' '.join(files))
@@ -298,7 +344,14 @@ def binlink(program_internal_name):
 
 
 def pathify(program_internal_name):
-    """Adds an installed program to PATH"""
+    """Add Program to Path.
+
+    Adds a program to PATH through ~/.hamstall/.bashrc
+
+    Args:
+        program_internal_name (str): Name of program to add to PATH
+
+    """
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
     config.add_line(line_to_write, "~/.hamstall/.bashrc")
@@ -306,6 +359,14 @@ def pathify(program_internal_name):
 
 
 def command(program):
+    """Mini-Shell.
+
+    Takes commands and passes them to the user's command interpreter while in the program directory
+
+    Args:
+        program (str): Program to run commands on
+
+    """
     run = 'y'
     while run == 'y':
         command = input('Please enter a command: ')
@@ -315,6 +376,14 @@ def command(program):
 
 
 def update(silent=False):
+    """Update Hamstall.
+
+    Checks to see if we should update hamstall, then does so if one is available
+
+    Args:
+        silent (bool): Whether or not to not provide user feedback. Defaults to False.
+
+    """
     if not can_update:
         print("requests not found! Can't update!")
         if silent:
@@ -348,7 +417,7 @@ def update(silent=False):
 
 
 def erase():
-    """Remove hamstall"""
+    """Remove hamstall."""
     if not (config.exists(config.full("~/.hamstall/hamstall.py"))):
         print("hamstall not detected so not removed!")
         generic.leave()
@@ -375,7 +444,15 @@ def erase():
 
 
 def first_time_setup(sym):
-    """Create hamstall files in ~/.hamstall"""
+    """First Time Setup.
+
+    Sets up hamstall for the first time.
+
+    Args:
+        sym (bool): Used for testing. If True, installed py's will be symlinked to originals, not copied.
+        False means it will be copied and not symlinked.
+
+    """
     if config.exists(config.full('~/.hamstall/hamstall.py')):
         print('Please don\'t run first time setup on an already installed system!')
         generic.leave()
@@ -415,13 +492,20 @@ def first_time_setup(sym):
 
 
 def verbose_toggle():
-    """Toggle verbose mode"""
+    """Enable/Disable Verbosity."""
     new_value = config.change_config('Verbose', 'flip')
     print("Verbose mode {}".format(generic.endi(new_value)))
 
 
 def install(program):
-    """Install an archive"""
+    """Install Archive.
+
+    Takes an archive and installs it.
+
+    Args:
+        program (str): Path to archive to install
+
+    """
     program_internal_name = config.name(program)
     if config.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
@@ -505,14 +589,27 @@ def install(program):
 
 
 def dirinstall(program_path, program_internal_name):
-    """Install a directory"""
+    """Install Directory.
+
+    Installs a directory as a program
+
+    Args:
+        program_path (str): Path to directory to install
+        program_internal_name (str): Name of program
+
+    """
     config.vprint("Moving folder to hamstall destination")
     move(program_path, config.full("~/.hamstall/bin/"))
     finish_install(program_internal_name)
 
 
 def uninstall(program):
-    """Uninstall a program"""
+    """Uninstall a Program.
+
+    Args:
+        program (str): Name of program to uninstall
+
+    """
     config.vprint("Removing program files")
     rmtree(config.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH and any binlinks for the program")
@@ -531,16 +628,21 @@ def uninstall(program):
 
 
 def list_programs():
-    """List all installed programs"""
+    """List Installed Programs."""
     for prog in config.db["programs"].keys():
         print(prog)
     generic.leave()
 
 
 def get_online_version(type_of_replacement):
-    """Get current version of hamstall through GitHub
-    prog - Program version
-    file - .hamstall folder version"""
+    """Get hamstall Version from GitHub.
+
+    Args:
+        type_of_replacement (str): Type of version to get (file or prog)
+    
+    Returns:
+        int: The specified version
+    """
     if not can_update:
         print("requests library not installed! Exiting...")
         generic.leave(1)
@@ -555,9 +657,17 @@ def get_online_version(type_of_replacement):
 
 
 def get_file_version(version_type):
-    """Get current version of hamstall from database file
-    prog - Program version
-    file - .hamstall folder version"""
+    """Get Database Versions.
+
+    Gets specified version of hamstall as stored in the database
+
+    Args:
+        version_type (str): Type of version to look up (file/prog)
+
+    Returns:
+        int: The specified version number
+
+    """
     if version_type == 'file':
         return config.db["version"]["file_version"]
     elif version_type == 'prog':
@@ -565,7 +675,13 @@ def get_file_version(version_type):
 
 
 def download_files(files, folder):
-    """Downloads a list of files and writes them"""
+    """Download List of Files.
+    
+    Args:
+        files (str[]): List of files to obtain from hamstall repo
+        folder (str): Folder to put files in
+
+    """
     if not can_update:
         print("Cannot download files if the request library isn't installed!")
         generic.leave(1)

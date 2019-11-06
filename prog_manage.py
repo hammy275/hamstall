@@ -15,7 +15,7 @@
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import os
-from shutil import copyfile, rmtree, move, which
+from shutil import copyfile, rmtree, move, which, copy
 from subprocess import call
 import sys
 import re
@@ -159,6 +159,11 @@ def finish_install(program_internal_name):
         program_internal_name (str): Name of program as stored in the database
 
     """
+    config.vprint("Removing temporary install directory (if it exists)")
+    try:
+        rmtree("/tmp/hamstall-temp")
+    except FileNotFoundError:
+        pass
     config.vprint("Adding program to hamstall list of programs")
     config.db["programs"].update({program_internal_name: {"desktops": []}})
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
@@ -248,7 +253,7 @@ Categories={categories}
     print("\nDesktop file created!")
 
 
-def gitinstall(git_url, program_internal_name):
+def gitinstall(git_url, program_internal_name, overwrite=False):
     """Git Install.
 
     Installs a program from a URL to a Git repository
@@ -267,11 +272,20 @@ def gitinstall(git_url, program_internal_name):
         print("The URL must end in .git!")
         generic.leave(1)
     config.vprint("Downloading git repository")
-    os.chdir(config.full("~/.hamstall/bin"))
+    if overwrite:
+        try:
+            rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+        except FileNotFoundError:
+            pass
+        os.chdir("/tmp/hamstall-temp")
+    else:
+        os.chdir(config.full("~/.hamstall/bin"))
     err = call(["git", "clone", git_url])
     if err != 0:
         print("Error detected! Installation halted.")
         generic.leave(1)
+    if overwrite:
+        call(["rsync", "-a", "/tmp/hamstall-temp", config.full("~/.hamstall/bin/{}".format(program_internal_name))])
     finish_install(program_internal_name)
 
 
@@ -497,29 +511,18 @@ def verbose_toggle():
     print("Verbose mode {}".format(generic.endi(new_value)))
 
 
-def install(program):
-    """Install Archive.
-
-    Takes an archive and installs it.
+def create_command(file_extension, program, overwrite_files=False):
+    """Create Extraction Command.
 
     Args:
-        program (str): Path to archive to install
+        file_extension (str): File extension of program (including .)
+        program (str): Program name
+        overwrite_files (bool): Whether or not the command should overwrite files. Defaults to False.
+
+    Returns:
+        str: Command to run
 
     """
-    program_internal_name = config.name(program)
-    if config.char_check(program_internal_name):
-        print("Error! Archive name contains a space or #!")
-        generic.leave(1)
-    config.vprint("Removing old temp directory (if it exists!)")
-    try:
-        rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
-    except FileNotFoundError:
-        config.vprint("Temp directory did not exist!")
-    config.vprint("Creating new temp directory")
-    os.mkdir(config.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
-    config.vprint("Extracting archive to temp directory")
-    file_extension = config.extension(program)
-    program = config.spaceify(program)
     if config.vcheck():  # Creates the command to run to extract the archive
         if file_extension == '.tar.gz' or file_extension == '.tar.xz':
             vflag = 'v'
@@ -538,29 +541,68 @@ def install(program):
             vflag = '-bb0 -bso0 -bd '
         elif file_extension == '.rar':
             vflag = '-idcdpq '
+    if overwrite_files:
+        if file_extension in [".tar.gz", ".tar.xz"]:
+            overwrite_flag = "--overwrite "
+        elif file_extension == ".zip":
+            overwrite_flag = " -o"
+        elif file_extension == ".7z":
+            overwrite_flag = "-y "
+        elif file_extension == ".rar":
+            overwrite_flag = "-o+ "
+    else:
+        overwrite_flag = ""
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
-        command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
+        command_to_go = "tar " + vflag + "xf " + overwrite_flag + program + " -C /tmp/hamstall-temp/"
         if which("tar") is None:
             print("tar not installed; please install it to install .tar.gz and .tar.xz files!")
             generic.leave()
     elif file_extension == '.zip':
-        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
+        command_to_go = 'unzip ' + vflag + overwrite_flag + ' ' + program + ' -d /tmp/hamstall-temp/'
         if which("unzip") is None:
             print("unzip not installed; please install it to install ZIP files!")
             generic.leave()
     elif file_extension == '.7z':
-        command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
+        command_to_go = '7z x ' + overwrite_flag + vflag + program + ' -o/tmp/hamstall-temp/'
         if which("7z") is None:
             print("7z not installed; please install it to install 7z files!")
             generic.leave()
     elif file_extension == '.rar':
-        command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
+        command_to_go = 'unrar x ' + overwrite_flag + vflag + program + ' /tmp/hamstall-temp/'
         if which("unrar") is None:
             print("unrar not installed; please install it to install RAR files!")
             generic.leave()
     else:
         print('Error! File type not supported!')
         generic.leave(1)
+    config.vprint("Running command: " + command_to_go)
+    return command_to_go
+
+
+def install(program, overwrite=False):
+    """Install Archive.
+
+    Takes an archive and installs it.
+
+    Args:
+        program (str): Path to archive to install
+
+    """
+    program_internal_name = config.name(program)
+    if config.char_check(program_internal_name):
+        print("Error! Archive name contains a space or #!")
+        generic.leave(1)
+    config.vprint("Removing old temp directory (if it exists!)")
+    try:
+        rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+    except FileNotFoundError:
+        pass
+    config.vprint("Creating new temp directory")
+    os.mkdir(config.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
+    config.vprint("Extracting archive to temp directory")
+    file_extension = config.extension(program)
+    program = config.spaceify(program)
+    command_to_go = create_command(file_extension, program, overwrite)
     config.vprint('File type detected: ' + file_extension)
     try:
         os.system(command_to_go)  # Extracts program archive
@@ -588,7 +630,7 @@ def install(program):
     finish_install(program_internal_name)
 
 
-def dirinstall(program_path, program_internal_name):
+def dirinstall(program_path, program_internal_name, overwrite=False):
     """Install Directory.
 
     Installs a directory as a program
@@ -599,7 +641,11 @@ def dirinstall(program_path, program_internal_name):
 
     """
     config.vprint("Moving folder to hamstall destination")
-    move(program_path, config.full("~/.hamstall/bin/"))
+    if overwrite:
+        call(["rsync", "-a", program_path, config.full("~/.hamstall/bin/{}".format(program_internal_name))])
+        rmtree(program_path)
+    else:
+        move(program_path, config.full("~/.hamstall/bin/"))
     finish_install(program_internal_name)
 
 

@@ -136,11 +136,13 @@ elif args.install is not None:
         generic.leave()
     program_internal_name = config.name(args.install)  # Get the program name
     if program_internal_name in config.db["programs"]:  # Reinstall check
-        reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]",
-                                      ["y", "n"], "n")  # Ask to reinstall
-        if reinstall == "y":
+        reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
+                                      ["r", "o", "n"], "n")  # Ask to reinstall
+        if reinstall == "r":
             prog_manage.uninstall(program_internal_name)
             prog_manage.install(args.install)  # Reinstall
+        elif reinstall == "o":
+            prog_manage.install(args.install, True)
         else:
             print("Reinstall cancelled.")
             generic.leave()
@@ -154,11 +156,13 @@ elif args.gitinstall is not None:
     else:
         program_internal_name = config.name(args.gitinstall)
         if program_internal_name in config.db["programs"]:
-            reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]",
-                                          ["y", "n"], "n")  # Ask to reinstall
-            if reinstall == "y":
+            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
+                                          ["r", "o", "n"], "n")  # Ask to reinstall
+            if reinstall == "r":
                 prog_manage.uninstall(program_internal_name)
                 prog_manage.gitinstall(args.gitinstall, program_internal_name)
+            elif reinstall == "o":
+                prog_manage.gitinstall(args.gitinstall, program_internal_name, True)
             else:
                 print("Reinstall cancelled.")
                 generic.leave()
@@ -176,10 +180,12 @@ elif args.dirinstall is not None:
     prog_int_name_temp = args.dirinstall[0:len(args.dirinstall)-1]
     program_internal_name = config.name(prog_int_name_temp + '.tar.gz')  # Add .tar.gz to make the original function work
     if program_internal_name in config.db["programs"]:
-        reinstall = generic.get_input("Application already exists! Would you like to reinstall? [y/N]", ["y", "n"], "n")
-        if reinstall == 'y':
+        reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n")
+        if reinstall == 'r':
             prog_manage.uninstall(program_internal_name)
             prog_manage.dirinstall(args.dirinstall, program_internal_name)
+        elif reinstall == 'o':
+            prog_manage.dirinstall(args.dirinstall, program_internal_name, True)
         else:
             print("Reinstall cancelled.")
             generic.leave()

@@ -277,6 +277,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
             rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
         except FileNotFoundError:
             pass
+        os.mkdir("/tmp/hamstall-temp")
         os.chdir("/tmp/hamstall-temp")
     else:
         os.chdir(config.full("~/.hamstall/bin"))
@@ -285,7 +286,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         print("Error detected! Installation halted.")
         generic.leave(1)
     if overwrite:
-        call(["rsync", "-a", "/tmp/hamstall-temp", config.full("~/.hamstall/bin/{}".format(program_internal_name))])
+        call(["rsync", "-a", "/tmp/hamstall-temp/{}/".format(program_internal_name), config.full("~/.hamstall/bin/{}".format(program_internal_name))])
     finish_install(program_internal_name)
 
 

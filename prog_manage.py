@@ -70,7 +70,7 @@ m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
     """)
-    if get_online_version("prog") <= 18:
+    if get_online_version("prog", "master") <= 18:
         print("hamstall stable release 1.2.0 hasn't happened yet!")
         print("#"*50)
         print("YOU CANNOT BACKTRACK FROM BETA TO MASTER UNTIL THIS RELEASE!")
@@ -749,11 +749,12 @@ def list_programs():
     generic.leave()
 
 
-def get_online_version(type_of_replacement):
+def get_online_version(type_of_replacement, branch=config.db["version"]["branch"]):
     """Get hamstall Version from GitHub.
 
     Args:
         type_of_replacement (str): Type of version to get (file or prog)
+        branch (str): Branch to check version of (default: User's current branch)
     
     Returns:
         int: The specified version
@@ -761,7 +762,7 @@ def get_online_version(type_of_replacement):
     if not can_update:
         print("requests library not installed! Exiting...")
         generic.leave(1)
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(config.db["version"]["branch"])
+    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
     version_raw = requests.get(version_url)
     version = version_raw.text
     spot = version.find(".")

@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 20
+prog_internal_version = 21
 file_version = 5
 
 #############
@@ -436,3 +436,7 @@ def get_db():
 
 db = get_db()
 verbose = vcheck()
+try:
+    branch = db["version"]["branch"]
+except KeyError:
+    branch = "master"

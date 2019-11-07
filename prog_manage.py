@@ -749,7 +749,7 @@ def list_programs():
     generic.leave()
 
 
-def get_online_version(type_of_replacement, branch=config.db["version"]["branch"]):
+def get_online_version(type_of_replacement, branch=config.branch):
     """Get hamstall Version from GitHub.
 
     Args:

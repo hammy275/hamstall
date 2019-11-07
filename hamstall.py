@@ -64,6 +64,14 @@ if config.locked():
 else:
     config.lock()
 
+if config.db == {"refresh": True}:
+    print("Hang tight! We're finishing up your downgrade...")
+    config.create("~/.hamstall/database")
+    prog_manage.create_db()
+    config.db = config.get_db()
+    config.write_db()
+    print("We're done! Continuing hamstall execution...")
+
 if not(config.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""
     yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',

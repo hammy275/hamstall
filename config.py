@@ -18,14 +18,27 @@ import os
 import sys
 import re
 import json
+import shutil
 
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 18
+prog_internal_version = 19
 file_version = 5
 
 #############
+
+
+def check_bin(bin):
+    """Check for Binary on System.
+
+    Args:
+        bin (str): Binary to check for
+    
+    Returns:
+        bool: Whether or not the binary exists.
+    """
+    return shutil.which(bin) is not None
 
 
 def get_shell_file():
@@ -410,10 +423,10 @@ def get_db():
         db = {}
     except json.decoder.JSONDecodeError:
         db_check = ""
-        while not (db_check in ['y', 'n']):
+        while not (db_check in ['u', 'n']):
             db_check = input("Database is corrupt, unreadable, or in a bad format! "
-                            "Are you upgrading from a version of hamstall earlier than 1.1.0? [y/n]")
-        if db_check == 'y':
+                            "Are you upgrading hamstall from an extremely early version, or are you not? [u/n]")
+        if db_check == 'u':
             db = {}
         else:
             print("Please check your database! Something is horrendously wrong...")

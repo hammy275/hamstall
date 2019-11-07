@@ -70,6 +70,11 @@ m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
     """)
+    if get_online_version("prog") <= 18:
+        print("hamstall stable release 1.2.0 hasn't happened yet!")
+        print("#"*50)
+        print("YOU CANNOT BACKTRACK FROM BETA TO MASTER UNTIL THIS RELEASE!")
+        print("#"*50)
     ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
     if ans == 'e':
         print("Not changing branches!")
@@ -87,15 +92,63 @@ E - Exit branch wizard and don't change branches.
             generic.leave()
         if ans == 'm':
             branch = "master"
+            if not config.check_bin("git"):
+                print("Cannot switch to master branch; git is not installed!")
+                print("hamstall has not had any settings changed, you are still on the beta branch!")
+                sys.exit(1)
         elif ans == 'b':
             branch = "beta"
         print("Changing branches and updating hamstall!")
         config.vprint("Switching branch and writing change to file")
         config.db["version"]["branch"] = branch
         config.write_db()
-        config.vprint("Updating hamstall...")
-        update(True)
-        generic.leave(0)
+        if branch == "beta":
+            config.vprint("Updating hamstall...")
+            update(True)
+            generic.leave(0)
+        elif branch == "master":
+            if get_online_version("prog") <= 18:
+                print("Cannot downgrade; downgrade infrastructure not in place!")
+                generic.leave(1)
+            config.vprint("Deleting and re-installing hamstall.")
+            os.chdir(config.full("~/.hamstall"))
+            config.vprint("Removing old hamstall .pys")
+            for i in os.listdir():
+                i_num = len(i) - 3
+                if i[i_num:len(i)] == '.py':
+                    try:
+                        os.remove(i)
+                    except FileNotFoundError:
+                        pass
+            try:
+                rmtree("/tmp/hamstall-temp")
+            except FileNotFoundError:
+                pass
+            os.mkdir("/tmp/hamstall-temp")
+            os.chdir("/tmp/hamstall-temp")
+            config.vprint("Cloning hamstall from the master branch")
+            call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
+            os.chdir("/tmp/hamstall-temp/hamstall")
+            config.vprint("Adding new hamstall .pys")
+            for i in os.listdir():
+                i_num = len(i) - 3
+                if i[i_num:len(i)] == '.py':
+                    copyfile(i, config.full('~/.hamstall/' + i))
+            config.vprint("Removing old database and programs.")
+            try:
+                os.remove(config.full("~/.hamstall/database"))
+            except FileNotFoundError:
+                pass
+            try:
+                rmtree(config.full("~/.hamstall/bin"))
+            except FileNotFoundError:
+                pass
+            os.mkdir(config.full("~/.hamstall/bin"))
+            print("Please run hamstall again to re-create the database!")
+            config.unlock()
+            config.db = {"refresh": True}
+            config.write_db()
+            sys.exit(0)
 
 
 def configure():
@@ -264,6 +317,9 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
+    if not config.check_bin("rsync") and overwrite:
+        print("rsync not installed! Please install it.")
+        sys.exit(1)
     config.vprint("Verifying that the input is a URL...")
     if re.match(r"https://\w.\w", git_url) is None or " " in git_url or "\\" in git_url:
         print("Invalid URL!")
@@ -591,6 +647,9 @@ def install(program, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
+    if not config.check_bin("rsync") and overwrite:
+        print("rsync not installed! Please install it.")
+        sys.exit(1)
     program_internal_name = config.name(program)
     if config.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
@@ -647,6 +706,9 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
+    if not config.check_bin("rsync") and overwrite:
+        print("rsync not installed! Please install it.")
+        sys.exit(1)
     config.vprint("Moving folder to hamstall destination")
     if overwrite:
         call(["rsync", "-a", program_path, config.full("~/.hamstall/bin/{}".format(program_internal_name))])

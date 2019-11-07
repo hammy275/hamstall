@@ -22,7 +22,7 @@ import json
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 17
+prog_internal_version = 18
 file_version = 5
 
 #############

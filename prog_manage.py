@@ -587,6 +587,7 @@ def install(program, overwrite=False):
 
     Args:
         program (str): Path to archive to install
+        overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
     program_internal_name = config.name(program)
@@ -621,7 +622,10 @@ def install(program, overwrite=False):
         source = config.full('/tmp/hamstall-temp')
         dest = config.full('~/.hamstall/bin/' + program_internal_name)
     config.vprint("Moving program to directory")
-    move(source, dest)
+    if overwrite:
+        call(["rsync", "-a", source, dest])
+    else:
+        move(source, dest)
     config.vprint("Adding program to hamstall list of programs")
     config.vprint('Removing old temp directory...')
     try:

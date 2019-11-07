@@ -261,6 +261,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
     Args:
         git_url (str): URL to Git repository
         program_internal_name (str): Name of program to use
+        overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
     config.vprint("Verifying that the input is a URL...")
@@ -643,6 +644,7 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
     Args:
         program_path (str): Path to directory to install
         program_internal_name (str): Name of program
+        overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     """
     config.vprint("Moving folder to hamstall destination")

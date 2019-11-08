@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 21
+prog_internal_version = 22
 file_version = 5
 
 #############
@@ -286,6 +286,28 @@ def spaceify(file_name):
         return_string = return_string + i
     return return_string
 
+
+def replace_in_file(old, new, file_path):
+    """Replace Strings in File.
+
+    Replaces all instances of "old" with "new" in "file".
+    
+    Args:
+        old (str): String to replace
+        new (str): String to replace with
+        file (str): Path to file to replace strings in
+    """
+    rewrite = """"""
+    file_path = full(file_path)
+    f = open(file_path, 'r')
+    open_file = f.readlines()
+    f.close()
+    for l in open_file:
+        rewrite += l.replace(old, new)
+    written = open(file_path, 'w')
+    written.write(str(rewrite))
+    written.close()  # Write then close our new copy of the file
+    return
 
 def check_line(line, file_path, mode):
     """Check for Line.

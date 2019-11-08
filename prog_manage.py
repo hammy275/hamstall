@@ -203,6 +203,22 @@ def remove_desktop(program):
         config.db["programs"][program]["desktops"].remove(inp)
 
 
+def rename(program):
+    new_name = "!"
+    while not new_name.replace("_", "").replace("-", "").isalnum():
+        new_name = input("Please enter the name you would like to change this program to: ")
+        if not new_name.replace("_", "").replace("-", "").isalnum():
+            print("Alphanumeric characters, dashes, and underscores only, please!")
+    config.db["programs"][new_name] = config.db["programs"].pop(program)
+    config.replace_in_file("export PATH=$PATH:~/.hamstall/bin/" + program, 
+    "export PATH=$PATH:~/.hamstall/bin/" + new_name, "~/.hamstall/.bashrc")
+    config.replace_in_file("'cd " + config.full('~/.hamstall/bin/' + program),
+    "'cd " + config.full('~/.hamstall/bin/' + new_name), "~/.hamstall/.bashrc")
+    config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
+    move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
+    return new_name
+
+
 def finish_install(program_internal_name):
     """End of Install.
 
@@ -358,6 +374,7 @@ def manage(program):
         print("Enter an option to manage " + program + ":")
         print("b - Create binlinks for " + program)
         print("p - Add " + program + " to PATH")
+        print("n - Rename " + program)
         print("u - Uninstall " + program)
         print("r - Remove all binlinks + PATHs for " + program)
         print("d - Create a .desktop file for " + program)
@@ -365,11 +382,13 @@ def manage(program):
         print("c - Run a command inside " + program + "'s directory")
         print("s - Launch a shell inside " + program + "'s directory")
         print("E - Exit program management")
-        option = generic.get_input("[b/p/u/r/d/rd/c/s/E]", ['b', 'p', 'u', 'r', 'd', 'c', 'rd', 's', 'e'], 'e')
+        option = generic.get_input("[b/p/n/u/r/d/rd/c/s/E]", ['b', 'p', 'n', 'u', 'r', 'd', 'c', 'rd', 's', 'e'], 'e')
         if option == 'b':
             binlink(program)
         elif option == 'p':
             pathify(program)
+        elif option == 'n':
+            program = rename(program)
         elif option == 'u':
             uninstall(program)
             generic.leave()

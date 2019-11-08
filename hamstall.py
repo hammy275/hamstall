@@ -82,6 +82,8 @@ if not(config.exists('~/.hamstall/hamstall.py')):
         prog_manage.first_time_setup(True)
     else:
         print('hamstall not installed.')
+        config.unlock()
+        sys.exit(0)
     generic.leave()
 
 try:

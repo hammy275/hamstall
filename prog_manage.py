@@ -61,7 +61,8 @@ def branch_wizard():
 ####WARNING####
 WARNING: You are changing branches of hamstall!
 Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
-Changing from beta to master can lead to extreme problems, as backtracking is not supported!
+Changing from beta to master means you will either HAVE ALL OF YOUR HAMSTALL PROGRAMS DELETED
+or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES UP!
 
 Switching branches will trigger an immediate update of hamstall!
 
@@ -73,7 +74,7 @@ E - Exit branch wizard and don't change branches.
     if get_online_version("prog", "master") <= 18:
         print("hamstall stable release 1.2.0 hasn't happened yet!")
         print("#"*50)
-        print("YOU CANNOT BACKTRACK FROM BETA TO MASTER UNTIL THIS RELEASE!")
+        print("You cannot reset to the older version of hamstall! You must stay on this version!")
         print("#"*50)
     ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
     if ans == 'e':
@@ -86,16 +87,20 @@ E - Exit branch wizard and don't change branches.
         print("Already on the beta branch, not switching!")
         generic.leave()
     else:
-        check = input('Type "YES" (without the quotes) to confirm the branch switch!')
+        check = input('Type "YES" (without the quotes) to confirm the branch switch! ')
         if check != "YES":
             print("Cancelling branch switch.")
             generic.leave()
         if ans == 'm':
             branch = "master"
             if not config.check_bin("git"):
-                print("Cannot switch to master branch; git is not installed!")
-                print("hamstall has not had any settings changed, you are still on the beta branch!")
-                sys.exit(1)
+                print("Git is not installed! Your branch can be switched, but downgrading is impossible! "
+                "If you would like to exit here, type \"y\"!")
+                if generic.get_input("", ['y','n'], 'n') == 'y':
+                    print("Branch has not been changed!")
+                    generic.leave(1)
+                else:
+                    print("Continuing with branch switch.")
         elif ans == 'b':
             branch = "beta"
         print("Changing branches and updating hamstall!")
@@ -108,47 +113,51 @@ E - Exit branch wizard and don't change branches.
             generic.leave(0)
         elif branch == "master":
             if get_online_version("prog") <= 18:
-                print("Cannot downgrade; downgrade infrastructure not in place!")
-                generic.leave(1)
-            config.vprint("Deleting and re-installing hamstall.")
-            os.chdir(config.full("~/.hamstall"))
-            config.vprint("Removing old hamstall .pys")
-            for i in os.listdir():
-                i_num = len(i) - 3
-                if i[i_num:len(i)] == '.py':
-                    try:
-                        os.remove(i)
-                    except FileNotFoundError:
-                        pass
-            try:
-                rmtree("/tmp/hamstall-temp")
-            except FileNotFoundError:
-                pass
-            os.mkdir("/tmp/hamstall-temp")
-            os.chdir("/tmp/hamstall-temp")
-            config.vprint("Cloning hamstall from the master branch")
-            call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
-            os.chdir("/tmp/hamstall-temp/hamstall")
-            config.vprint("Adding new hamstall .pys")
-            for i in os.listdir():
-                i_num = len(i) - 3
-                if i[i_num:len(i)] == '.py':
-                    copyfile(i, config.full('~/.hamstall/' + i))
-            config.vprint("Removing old database and programs.")
-            try:
-                os.remove(config.full("~/.hamstall/database"))
-            except FileNotFoundError:
-                pass
-            try:
-                rmtree(config.full("~/.hamstall/bin"))
-            except FileNotFoundError:
-                pass
-            os.mkdir(config.full("~/.hamstall/bin"))
-            print("Please run hamstall again to re-create the database!")
-            config.unlock()
-            config.db = {"refresh": True}
-            config.write_db()
-            sys.exit(0)
+                print("Cannot downgrade; staying on this version until master catches up!")
+                generic.leave(0)
+            print("Would you like to downgrade? If you do, all hamstall programs will be deleted! [y/N]")
+            dr = generic.get_input("If you don't, hamstall will remain at its current version until master is at a newer release! [y/N]",
+            ['y', 'n'], 'n')
+            if dr == 'y':
+                config.vprint("Deleting and re-installing hamstall.")
+                os.chdir(config.full("~/.hamstall"))
+                config.vprint("Removing old hamstall .pys")
+                for i in os.listdir():
+                    i_num = len(i) - 3
+                    if i[i_num:len(i)] == '.py':
+                        try:
+                            os.remove(i)
+                        except FileNotFoundError:
+                            pass
+                try:
+                    rmtree("/tmp/hamstall-temp")
+                except FileNotFoundError:
+                    pass
+                os.mkdir("/tmp/hamstall-temp")
+                os.chdir("/tmp/hamstall-temp")
+                config.vprint("Cloning hamstall from the master branch")
+                call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
+                os.chdir("/tmp/hamstall-temp/hamstall")
+                config.vprint("Adding new hamstall .pys")
+                for i in os.listdir():
+                    i_num = len(i) - 3
+                    if i[i_num:len(i)] == '.py':
+                        copyfile(i, config.full('~/.hamstall/' + i))
+                config.vprint("Removing old database and programs.")
+                try:
+                    os.remove(config.full("~/.hamstall/database"))
+                except FileNotFoundError:
+                    pass
+                try:
+                    rmtree(config.full("~/.hamstall/bin"))
+                except FileNotFoundError:
+                    pass
+                os.mkdir(config.full("~/.hamstall/bin"))
+                print("Please run hamstall again to re-create the database!")
+                config.unlock()
+                config.db = {"refresh": True}
+                config.write_db()
+                sys.exit(0)
 
 
 def configure():
@@ -174,10 +183,12 @@ e - Exit hamstall
             key = "Verbose"
         elif option == 'b':
             branch_wizard()
+            key = None
         elif option == 'e':
             generic.leave()
-        new_value = config.change_config(key, "flip")
-        print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
+        if key is not None:
+            new_value = config.change_config(key, "flip")
+            print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
 
 
 def remove_desktop(program):

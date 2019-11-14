@@ -57,6 +57,14 @@ def create_db():
 
 def branch_wizard():
     """Switch Branches."""
+    if get_online_version("prog", "master") <= 18:
+        extra_warning = """
+hamstall stable release 1.2.0 hasn't happened yet!
+You cannot reset to the older version of hamstall! You must stay on this version!
+###############
+        """
+    else:
+        extra_warning = ""
     print("""\n\n
 ####WARNING####
 WARNING: You are changing branches of hamstall!
@@ -65,17 +73,13 @@ Changing from beta to master means you will either HAVE ALL OF YOUR HAMSTALL PRO
 or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES UP!
 
 Switching branches will trigger an immediate update of hamstall!
-
+###############
+{extra_warning}
 Select a branch:
 m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
-    """)
-    if get_online_version("prog", "master") <= 18:
-        print("hamstall stable release 1.2.0 hasn't happened yet!")
-        print("#"*50)
-        print("You cannot reset to the older version of hamstall! You must stay on this version!")
-        print("#"*50)
+    """.format(extra_warning=extra_warning))
     ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
     if ans == 'e':
         print("Not changing branches!")
@@ -112,10 +116,10 @@ E - Exit branch wizard and don't change branches.
             update(True)
             generic.leave(0)
         elif branch == "master":
-            if get_online_version("prog") <= 18:
+            if get_online_version("prog", "master") <= 18:
                 print("Cannot downgrade; staying on this version until master catches up!")
                 generic.leave(0)
-            print("Would you like to downgrade? If you do, all hamstall programs will be deleted! [y/N]")
+            print("Would you like to downgrade? If you do, all hamstall programs will be deleted!")
             dr = generic.get_input("If you don't, hamstall will remain at its current version until master is at a newer release! [y/N]",
             ['y', 'n'], 'n')
             if dr == 'y':

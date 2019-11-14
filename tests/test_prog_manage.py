@@ -18,6 +18,21 @@ download_files
 """
 
 
+def nothing(a):
+    return None
+
+
+def test_gitinstall(monkeypatch):
+    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    prog_manage.gitinstall("https://github.com/hammy3502/hamstall.git", "hamstall")
+    assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/hamstall/prog_manage.py"))
+
+
+def test_get_file_version():
+    assert prog_manage.get_file_version("prog") == config.prog_internal_version
+    assert prog_manage.get_file_version("file") == config.file_version
+
+
 def test_pathify():
     prog_manage.pathify("package")
     assert config.check_line("export PATH=$PATH:~/.hamstall/bin/package # package", "~/.hamstall/.bashrc", "fuzzy")

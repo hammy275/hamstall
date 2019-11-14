@@ -4,6 +4,27 @@ import prog_manage
 import json
 
 
+def test_check_bin():
+    assert config.check_bin("sh") is True
+    assert config.check_bin("agtasdytfhgasdfsudyghaushdgj") is False
+
+
+def test_replace_in_file():
+    with open("/tmp/hamstall-test-temp", "w") as f:
+        f.write("Test Line.")
+    config.replace_in_file("Test Line.", "TestHere", "/tmp/hamstall-test-temp")
+    with open("/tmp/hamstall-test-temp", "r") as f:
+        assert f.readline() == "TestHere"
+    
+    with open("/tmp/hamstall-test-temp-two", "w") as f:
+        f.write("Test Line.")
+    config.replace_in_file("No Replace.", "TestHere", "/tmp/hamstall-test-temp")
+    with open("/tmp/hamstall-test-temp-two", "r") as f:
+        assert f.readline() == "Test Line."
+    os.remove("/tmp/hamstall-test-temp-two")
+    os.remove("/tmp/hamstall-test-temp")
+
+
 def test_read_config():
     assert config.read_config("Verbose") is False
 

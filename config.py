@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.2.0 beta"
-prog_internal_version = 24
+prog_internal_version = 25
 file_version = 5
 
 #############
@@ -99,7 +99,7 @@ def change_config(key, mode, value=None):
     """
     if mode == 'flip':
         try:
-            db["options"][key] = not (db["options"][key])
+            db["options"][key] = not db["options"][key]
             return db["options"][key]
         except KeyError:  # All config values are False by default, so this should make them True.
             db["options"].update({key: True})
@@ -125,7 +125,7 @@ def vcheck():
 
 
 def vprint(to_print):
-    """Print a message only if Verbose=True"""
+    """Print a message only if we're verbose"""
     global verbose
     if verbose:
         print(to_print)
@@ -168,16 +168,6 @@ def unlock():
     vprint("Lock removed!")
 
 
-def locked():
-    """Get Lock State.
-
-    Returns:
-        bool: True if hamstall is locked. False otherwise.
-
-    """
-    return os.path.isfile(full("/tmp/hamstall-lock"))
-
-
 def write_db():
     """Write Database.
 
@@ -209,7 +199,7 @@ def name(program):
 
     """
     program_internal_name = re.sub(r'.*/', '/', program)
-    extension_length = len(extension(program))  # Get extension length
+    extension_length = len(extension(program))
     program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
     return program_internal_name
 
@@ -249,6 +239,16 @@ def exists(file_name):
         return False
 
 
+def locked():
+    """Get Lock State.
+
+    Returns:
+        bool: True if hamstall is locked. False otherwise.
+
+    """
+    return exists("/tmp/hamstall-lock")
+
+
 def full(file_name):
     """Full Path.
 
@@ -276,15 +276,7 @@ def spaceify(file_name):
         str: The path with backslashes
 
     """
-    char_list = []
-    for c in file_name:
-        if c == ' ':
-            char_list.append('\\')
-        char_list.append(c)
-    return_string = ''
-    for i in char_list:
-        return_string = return_string + i
-    return return_string
+    return file_name.replace(" ", "\\ ")
 
 
 def replace_in_file(old, new, file_path):
@@ -308,6 +300,7 @@ def replace_in_file(old, new, file_path):
     written.write(str(rewrite))
     written.close()  # Write then close our new copy of the file
     return
+
 
 def check_line(line, file_path, mode):
     """Check for Line.

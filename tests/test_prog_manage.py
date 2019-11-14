@@ -40,7 +40,7 @@ def test_list_programs(capsys):
 
 
 def test_create_desktop(monkeypatch):
-    monkeypatch.setattr("sys.stdin", StringIO("test.sh\nComment here\nn\nName Here\n\nend\n"))
+    monkeypatch.setattr("sys.stdin", StringIO("test.sh\nComment here\n\nn\nName Here\n\nend\n"))
     prog_manage.create_desktop("package")
     assert config.exists("~/.local/share/applications/test.sh-package.desktop")
 

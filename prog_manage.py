@@ -250,6 +250,7 @@ def finish_install(program_internal_name):
         pass
     config.vprint("Adding program to hamstall list of programs")
     config.db["programs"].update({program_internal_name: {"desktops": []}})
+    config.write_db()
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -285,11 +286,17 @@ def create_desktop(program_internal_name):
         print("Desktop file already exists!")
         return
     exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
     comment = "/"
     while not comment.replace(" ", "").isalnum() and comment != "":
         comment = input("Please input a comment for the application: ")
     if comment == "":
         comment = program_internal_name
+    icon = "/"
+    while not icon.replace("-", "").replace("_", "").isalnum() and icon != "":
+        icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
+    if icon != "":
+        icon = "Icon=" + icon
     terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
     if terminal.lower() == 'y':
         should_terminal = "True"
@@ -323,12 +330,15 @@ def create_desktop(program_internal_name):
 [Desktop Entry]
 Name={name}
 Comment={comment}
+Path={path}
 Exec={exec_path}
+{icon}
 Terminal={should_terminal}
 Type=Application
 Categories={categories}
 """.format(name=name, comment=comment, exec_path=exec_path,
-           should_terminal=should_terminal, categories=cats)
+           should_terminal=should_terminal, categories=cats,
+           icon=icon, path=path)
     os.chdir(config.full("~/.local/share/applications/"))
     config.create("./{}.desktop".format(desktop_name))
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:

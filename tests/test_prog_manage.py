@@ -73,6 +73,13 @@ def test_uninstall():
     assert os.path.isfile(config.full("~/.hamstall/bin/package/test.sh")) is False
 
 
+def test_install(monkeypatch):
+    os.chdir(os.path.realpath(__file__)[:-19])
+    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    prog_manage.install("./fake_packages/package.tar.gz")
+    assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/package/test.sh"))
+
+
 def test_create_db():
     prog_manage.create_db()
     #TODO: Fake os so we can test get_shell_file in any environment

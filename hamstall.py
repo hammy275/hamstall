@@ -122,6 +122,7 @@ while config.get_version('file_version') > file_version:
         except FileNotFoundError:
             pass
             config.vprint("file.py not found, so not deleted!")
+        config.db["version"]["file_version"] = 5
         config.vprint("Upgraded from hamstall file version 4 to 5.")
     try:
         file_version = prog_manage.get_file_version('file')

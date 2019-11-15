@@ -201,6 +201,9 @@ def remove_desktop(program):
     Removes a .desktop file assosciated with a program and its corresponding entry in the database
     This process is walked through with the end-user
 
+    Args:
+        program (str): Program to remove
+
     """
     if not config.db["programs"][program]["desktops"]:
         print("Program has no .desktop files!")
@@ -437,7 +440,7 @@ def manage(program):
 
 
 def binlink(program_internal_name):
-    """Link Program
+    """Link Program.
 
     Creates an alias that cd's into a program directory before running a file in the program
 

@@ -44,11 +44,7 @@ group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only 
 group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
 args = parser.parse_args()  # Parser stuff
 
-username = getpass.getuser()
-if username == 'root':
-    print('Note: Running as root user will install programs for the root user to use!')
-
-if config.locked():
+if config.locked():  # Lock check
     config.vprint("Lock file detected at /tmp/hamstall-lock. " +
                   "Delete this file if you are completely sure no other instances of hamstall are running!")
     if args.remove_lock:
@@ -64,7 +60,11 @@ if config.locked():
 else:
     config.lock()
 
-if config.db == {"refresh": True}:
+username = getpass.getuser()  # Root check
+if username == 'root':
+    print('Note: Running as root user will install programs for the root user to use!')
+
+if config.db == {"refresh": True}:  # Downgrade check
     print("Hang tight! We're finishing up your downgrade...")
     config.create("~/.hamstall/database")
     prog_manage.create_db()
@@ -72,10 +72,10 @@ if config.db == {"refresh": True}:
     config.write_db()
     print("We're done! Continuing hamstall execution...")
 
-if args.first:
+if args.first:  # Check if -f or --first is supplied
     prog_manage.first_time_setup(False)
 
-if not(config.exists('~/.hamstall/hamstall.py')):
+if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
     """Install hamstall if it doesn't exist"""
     yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',
                            ['y', 'n', 'debug'], 'y')
@@ -89,7 +89,7 @@ if not(config.exists('~/.hamstall/hamstall.py')):
         sys.exit(0)
     generic.leave()
 
-try:
+try:  # Lingering upgrades check
     file_version = prog_manage.get_file_version('file')
 except KeyError:
     file_version = 1
@@ -133,20 +133,20 @@ while config.get_version('file_version') > file_version:
         file_version = 1
     config.write_db()
 
-if prog_manage.get_file_version('prog') == 1:  # Online update broke between versions 1 and 2 of hamstall
+if prog_manage.get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of hamstall
     print('Please manually update hamstall! You can back up your directories in ~/.hamstall !')
     generic.leave()
 
-if config.read_config("AutoInstall"):
+if config.read_config("AutoInstall"):  # Auto-update, if enabled
     prog_manage.update(True)
 
-if args.remove_lock:
+if args.remove_lock:  # Argument parsing
     print("Lock doesn't exist, so not removed!")
     generic.leave()
 
 elif args.install is not None:
     if not config.exists(args.install):
-        print("File to install does not exist!")
+        print("File does not exist!")
         generic.leave()
     program_internal_name = config.name(args.install)  # Get the program name
     if program_internal_name in config.db["programs"]:  # Reinstall check
@@ -248,7 +248,6 @@ elif args.config:
     prog_manage.configure()
 
 else:
-    # About hamstall
     print("""
 hamstall. A Python based package manager to manage archives.
 Written by: hammy3502

@@ -65,6 +65,7 @@ def leave(exit_code=0):
 
     Args:
         exit_code (int): Exit code. Defaults to 0.
+
     """
     config.write_db()
     config.unlock()

@@ -224,6 +224,9 @@ def rename(program):
         new_name = input("Please enter the name you would like to change this program to: ")
         if not new_name.replace("_", "").replace("-", "").isalnum():
             print("Alphanumeric characters, dashes, and underscores only, please!")
+    for d in config.db["programs"][program]["desktops"]:
+        config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
+        "~/.local/share/applications/{}.desktop".format(d))
     config.db["programs"][new_name] = config.db["programs"].pop(program)
     config.replace_in_file("export PATH=$PATH:~/.hamstall/bin/" + program, 
     "export PATH=$PATH:~/.hamstall/bin/" + new_name, "~/.hamstall/.bashrc")
@@ -613,7 +616,7 @@ def verbose_toggle():
     print("Verbose mode {}".format(generic.endi(new_value)))
 
 
-def create_command(file_extension, program, overwrite_files=False):
+def create_command(file_extension, program):
     """Create Extraction Command.
 
     Args:
@@ -643,34 +646,23 @@ def create_command(file_extension, program, overwrite_files=False):
             vflag = '-bb0 -bso0 -bd '
         elif file_extension == '.rar':
             vflag = '-idcdpq '
-    if overwrite_files:
-        if file_extension in [".tar.gz", ".tar.xz"]:
-            overwrite_flag = "--overwrite "
-        elif file_extension == ".zip":
-            overwrite_flag = " -o"
-        elif file_extension == ".7z":
-            overwrite_flag = "-y "
-        elif file_extension == ".rar":
-            overwrite_flag = "-o+ "
-    else:
-        overwrite_flag = ""
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
-        command_to_go = "tar " + vflag + "xf " + overwrite_flag + program + " -C /tmp/hamstall-temp/"
+        command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
         if which("tar") is None:
             print("tar not installed; please install it to install .tar.gz and .tar.xz files!")
             generic.leave()
     elif file_extension == '.zip':
-        command_to_go = 'unzip ' + vflag + overwrite_flag + ' ' + program + ' -d /tmp/hamstall-temp/'
+        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
         if which("unzip") is None:
             print("unzip not installed; please install it to install ZIP files!")
             generic.leave()
     elif file_extension == '.7z':
-        command_to_go = '7z x ' + overwrite_flag + vflag + program + ' -o/tmp/hamstall-temp/'
+        command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
         if which("7z") is None:
             print("7z not installed; please install it to install 7z files!")
             generic.leave()
     elif file_extension == '.rar':
-        command_to_go = 'unrar x ' + overwrite_flag + vflag + program + ' /tmp/hamstall-temp/'
+        command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
         if which("unrar") is None:
             print("unrar not installed; please install it to install RAR files!")
             generic.leave()
@@ -708,7 +700,7 @@ def install(program, overwrite=False):
     config.vprint("Extracting archive to temp directory")
     file_extension = config.extension(program)
     program = config.spaceify(program)
-    command_to_go = create_command(file_extension, program, overwrite)
+    command_to_go = create_command(file_extension, program)
     config.vprint('File type detected: ' + file_extension)
     try:
         os.system(command_to_go)  # Extracts program archive
@@ -719,15 +711,19 @@ def install(program, overwrite=False):
     config.vprint('Checking for folder in folder')
     if os.path.isdir(config.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
-        source = config.full('/tmp/hamstall-temp/' + program_internal_name + '/')
+        source = config.full('/tmp/hamstall-temp/' + program_internal_name) + '/'
         dest = config.full('~/.hamstall/bin/')
     else:
         config.vprint('Folder in folder not detected!')
-        source = config.full('/tmp/hamstall-temp')
-        dest = config.full('~/.hamstall/bin/' + program_internal_name)
+        source = config.full('/tmp/hamstall-temp') + '/'
+        dest = config.full('~/.hamstall/bin/' + program_internal_name + "/")
     config.vprint("Moving program to directory")
     if overwrite:
-        call(["rsync", "-a", source, dest])
+        if verbose:
+            verbose_flag = "v"
+        else:
+            verbose_flag = ""
+        call(["rsync", "-a{}".format(verbose_flag), source, dest])
     else:
         move(source, dest)
     config.vprint("Adding program to hamstall list of programs")

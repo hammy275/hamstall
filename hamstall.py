@@ -40,7 +40,7 @@ group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_
 group.add_argument('-u', '--update', help="Update hamstall if an update is available", action="store_true")
 group.add_argument('-m', '--manage', help="Manage an installed program")
 group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
-                                               "running!", action="store_true")
+                                               "running)", action="store_true")
 group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
 args = parser.parse_args()  # Parser stuff
 
@@ -71,6 +71,9 @@ if config.db == {"refresh": True}:
     config.db = config.get_db()
     config.write_db()
     print("We're done! Continuing hamstall execution...")
+
+if args.first:
+    prog_manage.first_time_setup(False)
 
 if not(config.exists('~/.hamstall/hamstall.py')):
     """Install hamstall if it doesn't exist"""
@@ -219,9 +222,6 @@ elif args.manage is not None:
 
 elif args.list:
     prog_manage.list_programs()  # List programs installed
-
-elif args.first:
-    prog_manage.first_time_setup(False)  # First time setup
 
 elif args.erase:
     erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]",

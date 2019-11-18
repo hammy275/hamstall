@@ -376,7 +376,7 @@ e - Exit hamstall
             print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
 
 
-def remove_desktop(program):
+def remove_desktop(program, desktop):
     """Remove .desktop
 
     Removes a .desktop file assosciated with a program and its corresponding entry in the database
@@ -384,31 +384,41 @@ def remove_desktop(program):
 
     Args:
         program (str): Program to remove
+        desktop (str): Name of .desktop to remove
 
     """
-    if not config.db["programs"][program]["desktops"]:
-        print("Program has no .desktop files!")
-    else:
-        print("Desktops: ")
-        for d in config.db["programs"][program]["desktops"]:
-            print(d)
-        inp = "/ choose desktop"
-        while not (inp in config.db["programs"][program]["desktops"]) and inp != "exit":
-            inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
-        try:
-            os.remove(config.full("~/.local/share/applications/{}.desktop".format(inp)))
-        except FileNotFoundError:
-            pass
-        config.db["programs"][program]["desktops"].remove(inp)
+    try:
+        os.remove(config.full("~/.local/share/applications/{}.desktop".format(desktop)))
+    except FileNotFoundError:
+        pass
+    config.db["programs"][program]["desktops"].remove(desktop)
     config.save()
 
 
-def rename(program):
-    new_name = "!"
-    while not new_name.replace("_", "").replace("-", "").isalnum():
-        new_name = input("Please enter the name you would like to change this program to: ")
-        if not new_name.replace("_", "").replace("-", "").isalnum():
-            print("Alphanumeric characters, dashes, and underscores only, please!")
+def remove_paths_and_binlinks(program):
+    """Remove PATHs and binlinks for "program"
+
+    Args:
+        program (str): Program to remove PATHs and binlinks of
+
+    Returns:
+        str: "Complete"
+
+    """
+    config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    return "Complete"
+
+
+def rename(program, new_name):
+    """Rename Program.
+
+    Args:
+        program (str): Name of program to rename
+
+    Returns:
+        str: New program name
+
+    """
     for d in config.db["programs"][program]["desktops"]:
         config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
         "~/.local/share/applications/{}.desktop".format(d))
@@ -440,6 +450,7 @@ def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
     config.db["programs"].update({program_internal_name: {"desktops": []}})
     config.write_db()
+    """
     yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
     if yn == 'y':
         pathify(program_internal_name)
@@ -449,6 +460,7 @@ def finish_install(program_internal_name):
     yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
     if yn == 'y':
         create_desktop(program_internal_name)
+    """
     print("Install complete!")
     generic.leave()
 
@@ -569,80 +581,11 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
     finish_install(program_internal_name)
 
 
-def manage(program):
-    """Manage Installed Program.
-
-    Args:
-        program (str): Internal name of program to manage
-
-    Returns:
-        str: A status of if we can manage the program. "Success" or "Not installed".
-
-    """
-    if not program in config.db["programs"]:
-        return "Not installed"
-    while True:
-        print("Enter an option to manage " + program + ":")
-        print("b - Create binlinks for " + program)
-        print("p - Add " + program + " to PATH")
-        print("n - Rename " + program)
-        print("u - Uninstall " + program)
-        print("r - Remove all binlinks + PATHs for " + program)
-        print("d - Create a .desktop file for " + program)
-        print("rd - Remove a .desktop file for " + program)
-        print("c - Run a command inside " + program + "'s directory")
-        print("s - Launch a shell inside " + program + "'s directory")
-        print("E - Exit program management")
-        option = generic.get_input("[b/p/n/u/r/d/rd/c/s/E]", ['b', 'p', 'n', 'u', 'r', 'd', 'c', 'rd', 's', 'e'], 'e')
-        if option == 'b':
-            binlink(program)
-        elif option == 'p':
-            pathify(program)
-        elif option == 'n':
-            program = rename(program)
-        elif option == 'u':
-            uninstall(program)
-            generic.leave()
-        elif option == 'r':
-            config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
-        elif option == 'd':
-            create_desktop(program)
-        elif option == 'rd':
-            remove_desktop(program)
-        elif option == 'c':
-            command(program)
-        elif option == 's':
-            print("When you exit the shell, you will be returned to here.")
-            os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
-            call(["/bin/bash"])
-        elif option == 'e':
-            generic.leave()
-
-
-def binlink(program_internal_name):
-    """Link Program.
-
-    Creates an alias that cd's into a program directory before running a file in the program
-
-    Args:
-        program_internal_name (str): Name of program to create a binlink for
-
-    """
-    while True:
-        files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
-        print(' '.join(files))
-        file_chosen = 'Cool fact. This line was originally written on line 163.'
-        while file_chosen not in files:  # Get file to binlink from user
-            file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
-            if file_chosen == "exit":
-                return
-        line_to_add = 'alias ' + file_chosen + "='cd " + config.full('~/.hamstall/bin/' + program_internal_name) + \
-                      '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
-        config.vprint("Adding alias to bashrc")
-        config.add_line(line_to_add, "~/.hamstall/.bashrc")
-        yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
-        if yn == 'n':
-            return
+def add_binlink(file_chosen, program_internal_name):
+    line_to_add = 'alias ' + file_chosen + "='cd " + config.full('~/.hamstall/bin/' + program_internal_name) + \
+    '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
+    config.vprint("Adding alias to bashrc")
+    config.add_line(line_to_add, "~/.hamstall/.bashrc")
 
 
 def pathify(program_internal_name):
@@ -657,33 +600,13 @@ def pathify(program_internal_name):
     config.vprint('Adding program to PATH')
     line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
     config.add_line(line_to_write, "~/.hamstall/.bashrc")
-    return
-
-
-def command(program):
-    """Mini-Shell.
-
-    Takes commands and passes them to the user's command interpreter while in the program directory
-
-    Args:
-        program (str): Program to run commands on
-
-    """
-    run = 'y'
-    while run == 'y':
-        command = input('Please enter a command: ')
-        call(["cd", "~/.hamstall/bin/{}/".format(program), "&&", command])
-        run = generic.get_input('Would you like to run another command? [y/N]', ['y', 'n'], 'n')
-    return
+    return "Complete"
 
 
 def update():
     """Update Hamstall.
 
     Checks to see if we should update hamstall, then does so if one is available
-
-    Args:
-        silent (bool): Whether or not to not provide user feedback. Defaults to False.
 
     Returns:
         str: "No requests" if requests isn't installed, "Newer version" if the installed

@@ -58,9 +58,8 @@ def test_create_desktop(monkeypatch):
     assert config.exists("~/.local/share/applications/test.sh-package.desktop")
 
 
-def test_remove_desktop(monkeypatch):
-    monkeypatch.setattr("sys.stdin", StringIO("test.sh-package"))
-    prog_manage.remove_desktop("package")
+def test_remove_desktop():
+    prog_manage.remove_desktop("package", "test.sh-package")
     assert not config.exists("~/.local/share/applications/test.sh-package.desktop")
 
 

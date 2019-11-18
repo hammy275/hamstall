@@ -24,6 +24,79 @@ import shutil
 import generic
 import prog_manage
 import config
+from subprocess import call
+
+
+def manage(program):
+    """Manage Installed Program.
+
+    Args:
+        program (str): Internal name of program to manage
+
+    """
+    if not program in config.db["programs"]:
+        print("{} not installed!".format(program))
+        generic.leave(1)
+    while True:
+        print("Enter an option to manage " + program + ":")
+        print("b - Create binlinks for " + program)
+        print("p - Add " + program + " to PATH")
+        print("n - Rename " + program)
+        print("u - Uninstall " + program)
+        print("r - Remove all binlinks + PATHs for " + program)
+        print("d - Create a .desktop file for " + program)
+        print("rd - Remove a .desktop file for " + program)
+        print("s - Launch a shell inside " + program + "'s directory")
+        print("E - Exit program management")
+        option = generic.get_input("[b/p/n/u/r/d/rd/s/E]", ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e'], 'e')
+        if option == 'b':
+            yn = 'y'
+            while yn != 'n':
+                files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+                print(' '.join(files))
+                file_chosen = 'Cool fact. This line was originally written on line 163.'
+                while file_chosen not in files:
+                    file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+                    if file_chosen == "exit":
+                        return
+                prog_manage.add_binlink(file_chosen, program)
+                yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
+        elif option == 'p':
+            status = prog_manage.pathify(program)
+            if status == "Complete":
+                print("Program added to PATH!")
+        elif option == 'n':
+            new_name = "!"
+            while not new_name.replace("_", "").replace("-", "").isalnum():
+                new_name = input("Please enter the name you would like to change this program to: ")
+                if not new_name.replace("_", "").replace("-", "").isalnum():
+                    print("Alphanumeric characters, dashes, and underscores only, please!")
+            program = prog_manage.rename(program, new_name)
+        elif option == 'u':
+            prog_manage.uninstall(program)
+            generic.leave()
+        elif option == 'r':
+            status = prog_manage.remove_paths_and_binlinks(program)
+            if status == "Complete":
+                print("Removal of PATHs and binlinks complete!")
+        elif option == 'd':
+            #TODO: Migrate the wizard to here.
+            prog_manage.create_desktop(program)
+        elif option == 'rd':
+            print("Desktops: ")
+            for d in config.db["programs"][program]["desktops"]:
+                print(d)
+            inp = "/ choose desktop"
+            while not (inp in config.db["programs"][program]["desktops"]) and inp != "exit":
+                inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
+            prog_manage.remove_desktop(program, inp)
+        elif option == 's':
+            print("When you exit the shell, you will be returned to here.")
+            os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
+            call(["/bin/bash"])
+        elif option == 'e':
+            generic.leave()
+
 
 def parse_args():
     """Argument Parsing.
@@ -146,10 +219,7 @@ def parse_args():
 
     elif args.manage is not None:
         #Managing will mostly be done here instead of in prog_manage
-        status = prog_manage.manage(args.manage)
-        if status == "Not installed":
-            print("{} isn't an installed program!".format(args.manage))
-        generic.leave()
+        manage()
 
     elif args.list:
         programs = prog_manage.list_programs()

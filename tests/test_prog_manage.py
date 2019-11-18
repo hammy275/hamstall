@@ -49,9 +49,7 @@ def test_verbose_toggle():
 
 
 def test_list_programs(capsys):
-    with pytest.raises(SystemExit):
-        prog_manage.list_programs()
-    assert capsys.readouterr().out.rstrip("\n") == "package"
+    prog_manage.list_programs() == ["package"]
 
 
 def test_create_desktop(monkeypatch):
@@ -100,7 +98,6 @@ def test_create_db():
 
 
 def test_erase():
-    with pytest.raises(SystemExit):
-        prog_manage.erase()
+    assert prog_manage.erase() == "Erased"
     assert os.path.isfile(config.full("~/.hamstall/hamstall.py")) is False
     assert config.check_line("source ~/.hamstall/.bashrc", "~/.bashrc", "fuzzy") is False

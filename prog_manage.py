@@ -49,10 +49,10 @@ def hamstall_startup(start_fts=False, del_lock=False):
     Returns:
         str: One of many different values indicating the status of hamstall. Those include:
         "Not installed", "Locked", "Good" (nothing bad happened), "Root" and "Old" (happens
-        when upgrading from hamstall prog_version 1), 
+        when upgrading from hamstall prog_version 1). Can also return a string from
+        first_time_setup.
 
     """
-    status = "Good"
     if config.locked():  # Lock check
         config.vprint("Lock file detected at /tmp/hamstall-lock.")
         if del_lock:
@@ -65,11 +65,6 @@ def hamstall_startup(start_fts=False, del_lock=False):
     else:
         config.lock()
 
-    username = getpass.getuser()  # Root check
-    if username == 'root':
-        config.vprint("We're running as root!")
-        return "Root"
-
     if config.db == {"refresh": True}:  # Downgrade check
         print("Hang tight! We're finishing up your downgrade...")
         config.create("~/.hamstall/database")
@@ -79,7 +74,7 @@ def hamstall_startup(start_fts=False, del_lock=False):
         print("We're done! Continuing hamstall execution...")
 
     if start_fts:  # Check if -f or --first is supplied
-        first_time_setup(False)
+        return first_time_setup(False)
 
     if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
         return "Not installed"
@@ -126,15 +121,20 @@ def hamstall_startup(start_fts=False, del_lock=False):
             file_version = get_file_version('file')
         except KeyError:
             file_version = 1
-        config.write_db()
+        config.save()
 
     if get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of hamstall
         return "Old"
 
     if config.read_config("AutoInstall"):  # Auto-update, if enabled
-        update(True)
+        update()
     
-    return status
+    username = getpass.getuser()  # Root check
+    if username == 'root':
+        config.vprint("We're running as root!")
+        return "Root"
+    
+    return "Good"
 
 
 def pre_install(program, overwrite=None):
@@ -152,7 +152,6 @@ def pre_install(program, overwrite=None):
     """
     if not config.exists(program):
         return "Bad file"
-        generic.leave()
     program_internal_name = config.name(program)  # Get the program name
     if program_internal_name in config.db["programs"]:  # Reinstall check
         if overwrite is None:
@@ -165,9 +164,20 @@ def pre_install(program, overwrite=None):
                 install(program, True)
     else:
         install(program)  # No reinstall needed to be asked, install program
+    config.save()
 
 
 def pre_gitinstall(program, overwrite=None):
+    """Before Git Installs.
+
+    Args:
+        program (str): Git URL to install
+        overwrite (bool/None): Whether to do an overwrite reinstall. Defaults to None.
+
+    Returns:
+        str: Statuses. Includes: 
+
+    """
     if not config.check_bin("git"):
         return "No git"
     elif re.match(r"https://\w.\w", program) is None or " " in program or "\\" in program or config.extension(program) != ".git":
@@ -185,6 +195,25 @@ def pre_gitinstall(program, overwrite=None):
                     gitinstall(program, program_internal_name, True)
         else:
             gitinstall(program, program_internal_name)
+    config.save()
+
+
+def pre_dirinstall(program, overwrite=None):
+    if not(os.path.isdir(config.full(program))) or program[-1:] != '/':
+        return "Bad folder"
+    prog_int_name_temp = program[0:len(program)-1]
+    program_internal_name = config.name(prog_int_name_temp + '.tar.gz')  # Add .tar.gz to make the original function work
+    if program_internal_name in config.db["programs"]:
+        if overwrite is None:
+            return "Application exists"
+        elif not overwrite:
+            uninstall(program_internal_name)
+            dirinstall(program, program_internal_name)
+        elif overwrite:
+            dirinstall(program, program_internal_name, True)
+    else:
+        dirinstall(program, program_internal_name)
+    config.save()
 
 
 def create_db():
@@ -371,6 +400,7 @@ def remove_desktop(program):
         except FileNotFoundError:
             pass
         config.db["programs"][program]["desktops"].remove(inp)
+    config.save()
 
 
 def rename(program):
@@ -389,6 +419,7 @@ def rename(program):
     "'cd " + config.full('~/.hamstall/bin/' + new_name), "~/.hamstall/.bashrc")
     config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
     move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
+    config.save()
     return new_name
 
 
@@ -544,7 +575,12 @@ def manage(program):
     Args:
         program (str): Internal name of program to manage
 
+    Returns:
+        str: A status of if we can manage the program. "Success" or "Not installed".
+
     """
+    if not program in config.db["programs"]:
+        return "Not installed"
     while True:
         print("Enter an option to manage " + program + ":")
         print("b - Create binlinks for " + program)
@@ -641,7 +677,7 @@ def command(program):
     return
 
 
-def update(silent=False):
+def update():
     """Update Hamstall.
 
     Checks to see if we should update hamstall, then does so if one is available
@@ -649,14 +685,14 @@ def update(silent=False):
     Args:
         silent (bool): Whether or not to not provide user feedback. Defaults to False.
 
+    Returns:
+        str: "No requests" if requests isn't installed, "Newer version" if the installed
+        version is newer than the one online, "No update" if there is no update, and
+        "Updated" upon a successful update.
     """
     if not can_update:
-        print("requests not found! Can't update!")
-        if silent:
-            return
-        else:
-            generic.leave(1)
-    """Update hamstall after checking for updates"""
+        config.vprint("requests isn't installed.")
+        return "No requests"
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
     final_version = get_online_version('prog')
@@ -674,19 +710,23 @@ def update(silent=False):
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
         config.db["version"]["prog_internal_version"] = final_version
+        config.save()
+        return "Updated"
     elif final_version < prog_version_internal:
-        if not silent:
-            print("hamstall version newer than latest online version! Something might be wrong...")
+        return "Newer version"
     else:
-        if not silent:
-            print("No update found!")
+        return "No update"
 
 
 def erase():
-    """Remove hamstall."""
+    """Remove hamstall.
+
+    Returns:
+        str: "Erased" on success or "Not installed" if hamstall isn't installed.
+
+    """
     if not (config.exists(config.full("~/.hamstall/hamstall.py"))):
-        print("hamstall not detected so not removed!")
-        generic.leave()
+        return "Not installed"
     config.vprint('Removing source line from bashrc')
     config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
     config.vprint("Removing .desktop files")
@@ -706,7 +746,7 @@ def erase():
     print("Hamstall has been removed from your system.")
     print('Please restart your terminal.')
     config.unlock()
-    sys.exit(0)
+    return "Erased"
 
 
 def first_time_setup(sym):
@@ -720,8 +760,7 @@ def first_time_setup(sym):
 
     """
     if config.exists(config.full('~/.hamstall/hamstall.py')):
-        print('Please don\'t run first time setup on an already installed system!')
-        generic.leave()
+        return "Already installed"
     print('Installing hamstall to your system...')
     try:
         os.mkdir(config.full("~/.hamstall"))
@@ -747,20 +786,21 @@ def first_time_setup(sym):
                 try:
                     copyfile(i, config.full('~/.hamstall/' + i))
                 except FileNotFoundError:
-                    print("A file is missing that was attempted to be copied! Install halted!")
-                    generic.leave(1)
+                    return "Bad copy"
     config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
     config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
-    print('First time setup complete!')
-    print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
-    print('Afterwards, you may begin using hamstall with the hamstall command!')
-    generic.leave()
+    return "Success"
 
 
 def verbose_toggle():
-    """Enable/Disable Verbosity."""
+    """Enable/Disable Verbosity.
+
+    Returns:
+        str: "enabled"/"disabled", depending on the new state.
+
+    """
     new_value = config.change_config('Verbose', 'flip')
-    print("Verbose mode {}".format(generic.endi(new_value)))
+    return generic.endi(new_value)
 
 
 def create_command(file_extension, program):
@@ -911,7 +951,12 @@ def uninstall(program):
     Args:
         program (str): Name of program to uninstall
 
+    Returns:
+        str: Status detailing the uninstall. Can be: "Not installed" or "Success".
+
     """
+    if not program in config.db["programs"]:
+        return "Not installed"
     config.vprint("Removing program files")
     rmtree(config.full("~/.hamstall/bin/" + program + '/'))
     config.vprint("Removing program from PATH and any binlinks for the program")
@@ -925,15 +970,17 @@ def uninstall(program):
                 pass
     config.vprint("Removing program from hamstall list of programs")
     del config.db["programs"][program]
-    print("Uninstall complete!")
-    return
+    return "Success"
 
 
 def list_programs():
-    """List Installed Programs."""
-    for prog in config.db["programs"].keys():
-        print(prog)
-    generic.leave()
+    """List Installed Programs.
+
+    Returns:
+        str[]: List of installed programs by name
+    
+    """
+    return config.db["programs"].keys()
 
 
 def get_online_version(type_of_replacement, branch=config.branch):

@@ -50,6 +50,17 @@ def parse_args():
 
     status = prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock)
 
+    if status == "Success":
+        print('First time setup complete!')
+        print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
+        print('Afterwards, you may begin using hamstall with the hamstall command!')
+    
+    elif status == "Already installed":
+        print("hamstall is already installed on your system! Cancelling installation.")
+    
+    elif status == "Bad copy":
+        print("A file was attempting to be copied, but was deleted during the process! Installation halted.")
+
     if status == "Locked":
         print("Another instance of hamstall is probably running! Execution halted!")
         sys.exit(2)
@@ -83,9 +94,9 @@ def parse_args():
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                       ["r", "o", "n"], "n")  # Ask to reinstall
             if reinstall == "r":
-                prog_manage.pre_install(args.install, False)
+                status = prog_manage.pre_install(args.install, False)
             elif reinstall == "o":
-                prog_manage.pre_install(args.install, True)
+                status = prog_manage.pre_install(args.install, True)
             else:
                 print("Reinstall cancelled.")
                 generic.leave()
@@ -102,52 +113,51 @@ def parse_args():
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                             ["r", "o", "n"], "n")  # Ask to reinstall
             if reinstall == "r":
-                prog_manage.pre_gitinstall(args.gitinstall, False)
+                status = prog_manage.pre_gitinstall(args.gitinstall, False)
             elif reinstall == "o":
-                prog_manage.pre_gitinstall(args.gitinstall, True)
+                status = prog_manage.pre_gitinstall(args.gitinstall, True)
             else:
                 print("Reinstall cancelled.")
                 generic.leave()
 
 
     elif args.dirinstall is not None:
-        if not(os.path.isdir(args.dirinstall)):
-            print("Folder to install does not exist!")
-            generic.leave()
-        if args.dirinstall[len(args.dirinstall) - 1] != '/':
-            print("Please make sure the directory ends with a / !")
-            generic.leave()
-        prog_int_name_temp = args.dirinstall[0:len(args.dirinstall)-1]
-        program_internal_name = config.name(prog_int_name_temp + '.tar.gz')  # Add .tar.gz to make the original function work
-        if program_internal_name in config.db["programs"]:
+        status = prog_manage.pre_dirinstall(args.dirinstall)
+        if status == "Bad folder":
+            print("Please specify a valid directory path that ends in a \"/\"!")
+            generic.leave(1)
+        elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n")
             if reinstall == 'r':
-                prog_manage.uninstall(program_internal_name)
-                prog_manage.dirinstall(args.dirinstall, program_internal_name)
+                status = prog_manage.pre_dirinstall(args.dirinstall, False)
             elif reinstall == 'o':
-                prog_manage.dirinstall(args.dirinstall, program_internal_name, True)
+                status = prog_manage.pre_dirinstall(args.dirinstall, True)
             else:
                 print("Reinstall cancelled.")
                 generic.leave()
-        else:
-            prog_manage.dirinstall(args.dirinstall, program_internal_name)
 
     elif args.remove is not None:
-        if args.remove in config.db["programs"]:  # If uninstall script exists
-            prog_manage.uninstall(args.remove)  # Uninstall program
-        else:
-            print("Program does not exist!")  # Program doesn't exist
+        status = prog_manage.uninstall(args.remove)
+        if status == "Success":
+            print("Successfully uninstalled {}!".format(args.remove))
+        elif status == "Not installed":
+            print("{} isn't an installed program!".format(args.remove))
         generic.leave()
 
     elif args.manage is not None:
-        if args.manage in config.db["programs"]:
-            prog_manage.manage(args.manage)
-        else:
-            print("Program does not exist!")
+        #Managing will mostly be done here instead of in prog_manage
+        status = prog_manage.manage(args.manage)
+        if status == "Not installed":
+            print("{} isn't an installed program!".format(args.manage))
         generic.leave()
 
     elif args.list:
-        prog_manage.list_programs()  # List programs installed
+        programs = prog_manage.list_programs()
+        if programs == []:
+            print("No programs installed!")
+        else:
+            for p in programs:
+                print(p)
 
     elif args.erase:
         erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]",
@@ -157,20 +167,34 @@ def parse_args():
                                                 'This will remove all programs installed with hamstall! [y/N]',
                                                 ['y', 'n'], 'n')
             if erase_really_sure == 'y':
-                prog_manage.erase()  # Remove hamstall from the system
+                status = prog_manage.erase()
+                if status == "Not installed":
+                    print("hamstall isn't installed, so not removed!")
+                elif status == "Erased":
+                    print("hamstall has been removed!")
             else:
                 print('Erase cancelled.')
         else:
             print('Erase cancelled.')
         generic.leave()
 
-    elif args.verbose:  # Verbose toggle
-        prog_manage.verbose_toggle()
+    elif args.verbose:
+        status = prog_manage.verbose_toggle()
+        print("Verbose mode changed to: {}".format(status))
 
     elif args.update:
-        prog_manage.update()
+        status = prog_manage.update()
+        if status == "No requests":
+            print("requests isn't installed, please install it!")
+        elif status == "Newer version":
+            print("The installed version is newer than the one found online!")
+        elif status == "No update":
+            print("No update was found!")
+        elif status == "Updated":
+            print("hamstall successfully updated!")
 
     elif args.config:
+        #Configure will be moved to here instead of being in prog_manage
         prog_manage.configure()
 
     else:

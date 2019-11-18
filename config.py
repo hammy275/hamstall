@@ -23,10 +23,16 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 29
+prog_internal_version = 30
 file_version = 5
 
 #############
+
+
+def save():
+    """Saves hamstall database and unlocks hamstall"""
+    write_db()
+    unlock()
 
 
 def check_bin(bin):

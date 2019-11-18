@@ -59,14 +59,7 @@ def endi(state):
 
 
 def leave(exit_code=0):
-    """Exit Program.
-
-    Leaves the program after writing the database and removing the lock.
-
-    Args:
-        exit_code (int): Exit code. Defaults to 0.
-
-    """
+    #Will be removed soon in favor of config.save()
     config.write_db()
     config.unlock()
     sys.exit(exit_code)

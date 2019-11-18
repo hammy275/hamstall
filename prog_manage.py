@@ -19,6 +19,7 @@ from shutil import copyfile, rmtree, move, which, copy
 from subprocess import call
 import sys
 import re
+import getpass
 
 try:
     import requests
@@ -33,6 +34,157 @@ except ImportError:
 
 import config
 import generic
+
+
+def hamstall_startup(start_fts=False, del_lock=False):
+    """Run on Startup.
+
+    Runs on hamstall startup to perform any required checks and upgrades.
+    This function should always be run before doing anything else with hamstall.
+
+    Args:
+        start_fts (bool): Whether or not to start first time setup
+        del_lock (bool): Whether or not to remove the lock (if it exists)
+
+    Returns:
+        str: One of many different values indicating the status of hamstall. Those include:
+        "Not installed", "Locked", "Good" (nothing bad happened), "Root" and "Old" (happens
+        when upgrading from hamstall prog_version 1), 
+
+    """
+    status = "Good"
+    if config.locked():  # Lock check
+        config.vprint("Lock file detected at /tmp/hamstall-lock.")
+        if del_lock:
+            config.vprint("Delete the lock!")
+            config.unlock()
+            generic.leave()
+        else:
+            config.vprint("Lock file removal not specified; locking.")
+            return "Locked"
+    else:
+        config.lock()
+
+    username = getpass.getuser()  # Root check
+    if username == 'root':
+        config.vprint("We're running as root!")
+        return "Root"
+
+    if config.db == {"refresh": True}:  # Downgrade check
+        print("Hang tight! We're finishing up your downgrade...")
+        config.create("~/.hamstall/database")
+        create_db()
+        config.db = config.get_db()
+        config.write_db()
+        print("We're done! Continuing hamstall execution...")
+
+    if start_fts:  # Check if -f or --first is supplied
+        first_time_setup(False)
+
+    if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
+        return "Not installed"
+
+    try:  # Lingering upgrades check
+        file_version = get_file_version('file')
+    except KeyError:
+        file_version = 1
+    while config.get_version('file_version') > file_version:
+        if file_version == 1:
+            print("Removing database config. This will corrupt which programs are installed!")
+            print("If you are using hamstall, please contact hammy3502 for an upgrade process.")
+            input("Press ENTER to continue...")
+            try:
+                config.vprint("Removing old database")
+                os.remove(config.full("~/.hamstall/database"))
+            except FileNotFoundError:
+                pass
+            config.vprint("Creating new database")
+            config.create("~/.hamstall/database")
+            create_db()
+            config.vprint("Upgraded from hamstall file version 1 to 2.")
+        elif file_version == 2:
+            config.vprint("Database needs to have the branch key! Adding...")
+            config.db["version"].update({"branch": "master"})
+            config.db["version"]["file_version"] = 3
+            config.vprint("Upgraded from hamstall file version 2 to 3.")
+        elif file_version == 3:
+            config.vprint("Database needs to have the shell key! Adding...")
+            config.db["options"].update({"ShellFile": config.get_shell_file()})
+            config.db["version"]["file_version"] = 4
+            config.vprint("Upgraded from hamstall file version 3 to 4.")
+        elif file_version == 4:
+            config.vprint("file.py merged into config.py; deleting old file.py...")
+            try:
+                os.remove(config.full("~/.hamstall/file.py"))
+                config.vprint("Deleted file.py")
+            except FileNotFoundError:
+                pass
+                config.vprint("file.py not found, so not deleted!")
+            config.db["version"]["file_version"] = 5
+            config.vprint("Upgraded from hamstall file version 4 to 5.")
+        try:
+            file_version = get_file_version('file')
+        except KeyError:
+            file_version = 1
+        config.write_db()
+
+    if get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of hamstall
+        return "Old"
+
+    if config.read_config("AutoInstall"):  # Auto-update, if enabled
+        update(True)
+    
+    return status
+
+
+def pre_install(program, overwrite=None):
+    """Pre-Archive Install.
+
+    Preparation before installing an archive.
+
+    Arguments:
+        program (str): Path to archive to attempt installation.
+        overwrite (bool/None): Whether or not to overwrite the program if it exists.
+
+    Returns:
+        str: Status of the installation. Possible returns are: "Bad file", and "Application exists".
+
+    """
+    if not config.exists(program):
+        return "Bad file"
+        generic.leave()
+    program_internal_name = config.name(program)  # Get the program name
+    if program_internal_name in config.db["programs"]:  # Reinstall check
+        if overwrite is None:
+            return "Application exists"
+        else:
+            if not overwrite:
+                uninstall(program_internal_name)
+                install(program)  # Reinstall
+            elif overwrite:
+                install(program, True)
+    else:
+        install(program)  # No reinstall needed to be asked, install program
+
+
+def pre_gitinstall(program, overwrite=None):
+    if not config.check_bin("git"):
+        return "No git"
+    elif re.match(r"https://\w.\w", program) is None or " " in program or "\\" in program or config.extension(program) != ".git":
+        return "Bad URL"
+    else:
+        program_internal_name = config.name(program)
+        if program_internal_name in config.db["programs"]:
+            if overwrite is None:
+                return "Application exists"
+            else:
+                if not overwrite:
+                    uninstall(program_internal_name)
+                    gitinstall(program, program_internal_name)
+                elif overwrite:
+                    gitinstall(program, program_internal_name, True)
+        else:
+            gitinstall(program, program_internal_name)
 
 
 def create_db():
@@ -367,14 +519,6 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
     if not config.check_bin("rsync") and overwrite:
         print("rsync not installed! Please install it.")
         generic.leave(1)
-    config.vprint("Verifying that the input is a URL...")
-    if re.match(r"https://\w.\w", git_url) is None or " " in git_url or "\\" in git_url:
-        print("Invalid URL!")
-        generic.leave()
-    config.vprint("Checking for .git extension")
-    if config.extension(git_url) != ".git":
-        print("The URL must end in .git!")
-        generic.leave(1)
     config.vprint("Downloading git repository")
     if overwrite:
         try:
@@ -528,7 +672,7 @@ def update(silent=False):
             if i[i_num:len(i)] == '.py':
                 os.remove(config.full('~/.hamstall/' + i))
         config.vprint("Downloading new hamstall pys..")
-        download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
+        download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
         config.db["version"]["prog_internal_version"] = final_version
     elif final_version < prog_version_internal:
         if not silent:

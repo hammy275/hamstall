@@ -298,8 +298,8 @@ def create_desktop(program_internal_name):
         comment = input("Please input a comment for the application: ")
     if comment == "":
         comment = program_internal_name
-    icon = "/"
-    while not icon.replace("-", "").replace("_", "").isalnum() and icon != "":
+    icon = ";"
+    while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
         icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
     if icon != "":
         icon = "Icon=" + icon
@@ -366,7 +366,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
     """
     if not config.check_bin("rsync") and overwrite:
         print("rsync not installed! Please install it.")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint("Verifying that the input is a URL...")
     if re.match(r"https://\w.\w", git_url) is None or " " in git_url or "\\" in git_url:
         print("Invalid URL!")
@@ -688,7 +688,7 @@ def install(program, overwrite=False):
     """
     if not config.check_bin("rsync") and overwrite:
         print("rsync not installed! Please install it.")
-        sys.exit(1)
+        generic.leave(1)
     program_internal_name = config.name(program)
     if config.char_check(program_internal_name):
         print("Error! Archive name contains a space or #!")
@@ -751,7 +751,7 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
     """
     if not config.check_bin("rsync") and overwrite:
         print("rsync not installed! Please install it.")
-        sys.exit(1)
+        generic.leave(1)
     config.vprint("Moving folder to hamstall destination")
     if overwrite:
         call(["rsync", "-a", program_path, config.full("~/.hamstall/bin/{}".format(program_internal_name))])

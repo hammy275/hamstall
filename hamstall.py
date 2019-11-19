@@ -219,6 +219,7 @@ def install_wrap_up(program):
     yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
     if yn == 'y':
         desktop_wizard(program)
+    print("Installation complete!")
 
 
 def manage(program):
@@ -282,6 +283,24 @@ def manage(program):
             break
 
 
+def fts_status(status):
+    if status == "Success":
+        print('First time setup complete!')
+        print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
+        print('Afterwards, you may begin using hamstall with the hamstall command!')
+        sys.exit(0)
+
+    elif status == "Already installed":
+        print("hamstall is already installed on your system! Cancelling installation.")
+        sys.exit(1)
+
+    elif status == "Bad copy":
+        print("A file was attempting to be copied, but was deleted during the process! Installation halted.")
+        sys.exit(1)
+    
+    else:
+        return
+
 def parse_args():
     """Argument Parsing.
 
@@ -307,28 +326,25 @@ def parse_args():
 
     status = prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock)
 
-    if status == "Success":
-        print('First time setup complete!')
-        print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
-        print('Afterwards, you may begin using hamstall with the hamstall command!')
-    
-    elif status == "Already installed":
-        print("hamstall is already installed on your system! Cancelling installation.")
-    
-    elif status == "Bad copy":
-        print("A file was attempting to be copied, but was deleted during the process! Installation halted.")
+    fts_status(status)
 
     if status == "Locked":
         print("Another instance of hamstall is probably running! Execution halted!")
-        sys.exit(2)
+        sys.exit(1)
+
+    elif status == "Unlocked":
+        print("hamstall unlocked!")
+        sys.exit(0)
 
     elif status == "Not installed":
         yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',
                                 ['y', 'n', 'debug'], 'y')
         if yn == 'y':
             prog_manage.first_time_setup(False)
+            fts_status(status)
         elif yn == 'debug':
             prog_manage.first_time_setup(True)
+            fts_status(status)
         else:
             print('hamstall not installed.')
             config.unlock()
@@ -361,7 +377,7 @@ def parse_args():
             else:
                 print("Reinstall cancelled.")
         if status == "Installed":
-            install_wrap_up(args.install)
+            install_wrap_up(config.name(args.install))
         elif status.startswith("No"):
             print("{} needs to be installed! Installation halted.".format(status[3:]))
         elif status == "No rsync":
@@ -392,7 +408,7 @@ def parse_args():
             else:
                 print("Reinstall cancelled.")
         if status == "Installed":
-            install_wrap_up(args.gitinstall)
+            install_wrap_up(config.name(args.gitinstall))
         elif status == "No rsync":
             print("rsync not installed! Please install it!")
             sys.exit(1)
@@ -415,7 +431,7 @@ def parse_args():
             else:
                 print("Reinstall cancelled.")
         if status == "Installed":
-            install_wrap_up(args.dirinstall)
+            install_wrap_up(config.name(args.dirinstall))
         elif status == "No rsync":
             print("rsync not installed! Please install it!")
             sys.exit(1)
@@ -428,8 +444,7 @@ def parse_args():
             print("{} isn't an installed program!".format(args.remove))
 
     elif args.manage is not None:
-        #Managing will mostly be done here instead of in prog_manage
-        manage()
+        manage(args.manage)
 
     elif args.list:
         programs = prog_manage.list_programs()
@@ -479,7 +494,6 @@ def parse_args():
             sys.exit(1)
 
     elif args.config:
-        #Configure will be moved to here instead of being in prog_manage
         prog_manage.configure()
 
     else:

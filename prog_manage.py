@@ -119,9 +119,9 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     Returns:
         str: One of many different values indicating the status of hamstall. Those include:
         "Not installed", "Locked", "Good" (nothing bad happened), "Root", "Old" (happens
-        when upgrading from hamstall prog_version 1), and "Old upgrade" if hamstall
+        when upgrading from hamstall prog_version 1), "Old upgrade" if hamstall
         needs to upgrade but it would wipe the database during the upgrade
-        process.
+        process, and "Unlocked" if hamstall was successfully unlocked.
         Can also return a string from first_time_setup.
 
     """
@@ -130,6 +130,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
         if del_lock:
             config.vprint("Deleting the lock and continuing execution!")
             config.unlock()
+            return "Unlocked"
         else:
             config.vprint("Lock file removal not specified; staying locked.")
             return "Locked"
@@ -411,23 +412,21 @@ def create_desktop(program_internal_name, name, program_file, comment="", should
     if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
         return "Already exists"
-    if "Video" not in cats or "Audio" not in cats and not ("AudioVideo" in cats):
+    if "Video" in cats or "Audio" in cats and "AudioVideo" not in cats:
         cats.append("AudioVideo")
     if not cats:
         cats = ["Utility"]
     cats = ";".join(cats) + ";"  # Get categories for the .desktop
     if comment != "":
         comment = "Comment=" + comment
-    elif exec_path != "":
-        exec_path = "Exec=" + exec_path
-    elif icon != "":
+    if icon != "":
         icon = "Icon=" + icon
     to_write = """
 [Desktop Entry]
 Name={name}
 {comment}
 Path={path}
-{exec_path}
+Exec={exec_path}
 {icon}
 Terminal={should_terminal}
 Type=Application
@@ -582,6 +581,8 @@ def first_time_setup(sym):
         sym (bool): Used for testing. If True, installed py's will be symlinked to originals, not copied.
         False means it will be copied and not symlinked.
 
+    Returns:
+        str: "Already installed" if already installed, "Success" on installation success.
     """
     if config.exists(config.full('~/.hamstall/hamstall.py')):
         return "Already installed"
@@ -613,6 +614,7 @@ def first_time_setup(sym):
                     return "Bad copy"
     config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
     config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
+    config.unlock()
     return "Success"
 
 

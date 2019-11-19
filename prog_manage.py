@@ -465,74 +465,47 @@ def finish_install(program_internal_name):
     generic.leave()
 
 
-def create_desktop(program_internal_name):
+def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon=""):
     """Create Desktop.
 
-    Walks the user through creating a .desktop file for a program
+    Create a desktop file for a program installed through hamstall.
 
     Args:
-        program_internal_name (str): Name of program as stored in the database
+         program_internal_name (str): Name of program
+         name (str): The name as will be used in the .desktop file
+         program_file (str): The file in the program directory to point the .desktop to
+         comment (str): The comment as to be displayed in the .desktop file
+         should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
+         cats (str[]): List of categories to put in .desktop file
+         icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
 
+    Returns:
+        str: "Already exists" if the .desktop file already exists or "Created" if the desktop file was
+        successfully created.
     """
-    files = os.listdir(config.full('~/.hamstall/bin/' + program_internal_name + '/'))
-    print(' '.join(files))
-    program_file = '/Placeholder/'
-    config.vprint("Getting user inputs")
-    while program_file not in files:  # Get file to binlink from user
-        program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
-        if program_file == "exit":
-            return
+    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
     desktop_name = "{}-{}".format(program_file, program_internal_name)
     if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
-        return
-    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
-    comment = "/"
-    while not comment.replace(" ", "").isalnum() and comment != "":
-        comment = input("Please input a comment for the application: ")
-    if comment == "":
-        comment = program_internal_name
-    icon = ";"
-    while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
-        icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
-    if icon != "":
+        return "Already exists"
+    if "Video" not in cats or "Audio" not in cats and not ("AudioVideo" in cats):
+        cats.append("AudioVideo")
+    if not cats:
+        cats = ["Utility"]
+    cats = ";".join(cats) + ";"  # Get categories for the .desktop
+    if comment != "":
+        comment = "Comment=" + comment
+    elif exec_path != "":
+        exec_path = "Exec=" + exec_path
+    elif icon != "":
         icon = "Icon=" + icon
-    terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
-    if terminal.lower() == 'y':
-        should_terminal = "True"
-    else:
-        should_terminal = "False"
-    name = "/"
-    while not name.replace(" ", "").isalnum() and name != "":
-        name = input("Please enter a name: ")
-    if name == "":
-        name = program_internal_name
-    ans = " "
-    chosen_categories = []
-    categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office", "science",
-                  "settings", "system", "utility", "end"]
-    while ans.lower() != "end":
-        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
-              "Utility). Type \"end\" to end category selection. \n")
-        print(", ".join(categories))
-        ans = generic.get_input("", categories, "Utility")
-        if ans.capitalize() in chosen_categories or ans == "end":
-            pass
-        else:
-            ans = ans.capitalize()
-            chosen_categories.append(ans)
-            if ans in ["Audio", "Video"] and not ("AudioVideo" in chosen_categories):
-                chosen_categories.append("AudioVideo")
-    if not chosen_categories:
-        chosen_categories = ["Utility"]
-    cats = ";".join(chosen_categories) + ";"  # Get categories for the .desktop
     to_write = """
 [Desktop Entry]
 Name={name}
-Comment={comment}
+{comment}
 Path={path}
-Exec={exec_path}
+{exec_path}
 {icon}
 Terminal={should_terminal}
 Type=Application
@@ -545,7 +518,7 @@ Categories={categories}
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
     config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
-    print("\nDesktop file created!")
+    return "Created"
 
 
 def gitinstall(git_url, program_internal_name, overwrite=False):

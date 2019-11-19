@@ -80,8 +80,51 @@ def manage(program):
             if status == "Complete":
                 print("Removal of PATHs and binlinks complete!")
         elif option == 'd':
-            #TODO: Migrate the wizard to here.
-            prog_manage.create_desktop(program)
+            files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+            print(' '.join(files))
+            program_file = '/Placeholder/'
+            config.vprint("Getting user inputs")
+            while program_file not in files:
+                program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+                if program_file == "exit":
+                    return
+            comment = "/"
+            while not comment.replace(" ", "").isalnum() and comment != "":
+                comment = input("Please input a comment for the application: ")
+            icon = ";"
+            while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
+                icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
+            terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
+            if terminal.lower() == 'y':
+                should_terminal = "True"
+            else:
+                should_terminal = "False"
+            name = "/"
+            while not name.replace(" ", "").isalnum() and name != "":
+                name = input("Please enter a name: ")
+            if name == "":
+                name = program
+            ans = " "
+            chosen_categories = []
+            categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office",
+                          "science",
+                          "settings", "system", "utility", "end"]
+            while ans.lower() != "end":
+                print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
+                      "Utility). Type \"end\" to end category selection. \n")
+                print(", ".join(categories))
+                ans = generic.get_input("", categories, "Utility")
+                if ans.capitalize() in chosen_categories or ans == "end":
+                    pass
+                else:
+                    ans = ans.capitalize()
+                    chosen_categories.append(ans)
+            status = prog_manage.create_desktop(program, name, program_file, comment, should_terminal,
+                                                chosen_categories, icon)
+            if status == "Created":
+                print(".desktop file successfully created!")
+            elif status == "Already exists":
+                print(".desktop file already exists!")
         elif option == 'rd':
             print("Desktops: ")
             for d in config.db["programs"][program]["desktops"]:
@@ -93,7 +136,10 @@ def manage(program):
         elif option == 's':
             print("When you exit the shell, you will be returned to here.")
             os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
-            call(["/bin/bash"])
+            if config.get_shell_file() == ".zshrc":
+                call(["/bin/zsh"])
+            else:
+                call(["/bin/bash"])
         elif option == 'e':
             generic.leave()
 

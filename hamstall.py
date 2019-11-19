@@ -27,6 +27,143 @@ import config
 from subprocess import call
 
 
+def configure():
+    """Change hamstall Options."""
+    while True:
+        print("""
+Select an option:
+au - Enable/disable the ability to install updates when hamstall is run. Currently {au}.
+v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
+b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
+e - Exit hamstall
+        """.format(
+            au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
+            b=config.db["version"]["branch"]
+        ))
+        option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
+        if option == 'au':
+            if not prog_manage.can_update:
+                print("requests isn't installed, so AutoInstall cannot be enabled!")
+            else:
+                key = "AutoInstall"
+        elif option == 'v':
+            key = "Verbose"
+        elif option == 'b':
+            prog_manage.branch_wizard()
+            key = None
+        elif option == 'e':
+            return
+        if key is not None:
+            new_value = config.change_config(key, "flip")
+            print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
+
+
+def pathify(program):
+    """Pathify CLI Function.
+
+    Args:
+        program (str): Name of program to PATHify
+
+    """
+    status = prog_manage.pathify(program)
+    if status == "Complete":
+        print("Program added to PATH!")
+
+
+def binlink(program):
+    """Binlink CLI Function.
+
+    Args:
+        program (str): Name of program to create binlinks for
+
+    """
+    yn = 'y'
+    while yn != 'n':
+        files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+        print(' '.join(files))
+        file_chosen = 'Cool fact. This line was originally written on line 163.'
+        while file_chosen not in files:
+            file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+            if file_chosen == "exit":
+                return
+        prog_manage.add_binlink(file_chosen, program)
+        yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
+
+
+def desktop_wizard(program):
+    """Desktop Creation Wizard.
+
+    Args:
+        program (str): Program to create .desktop file of
+
+    """
+    files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+    print(' '.join(files))
+    program_file = '/Placeholder/'
+    config.vprint("Getting user inputs")
+    while program_file not in files:
+        program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
+        if program_file == "exit":
+            return
+    comment = "/"
+    while not comment.replace(" ", "").isalnum() and comment != "":
+        comment = input("Please input a comment for the application: ")
+    icon = ";"
+    while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
+        icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
+    terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
+    if terminal.lower() == 'y':
+        should_terminal = "True"
+    else:
+        should_terminal = "False"
+    name = "/"
+    while not name.replace(" ", "").isalnum() and name != "":
+        name = input("Please enter a name: ")
+    if name == "":
+        name = program
+    ans = " "
+    chosen_categories = []
+    categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office",
+                    "science",
+                    "settings", "system", "utility", "end"]
+    while ans.lower() != "end":
+        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
+                "Utility). Type \"end\" to end category selection. \n")
+        print(", ".join(categories))
+        ans = generic.get_input("", categories, "Utility")
+        if ans.capitalize() in chosen_categories or ans == "end":
+            pass
+        else:
+            ans = ans.capitalize()
+            chosen_categories.append(ans)
+    status = prog_manage.create_desktop(program, name, program_file, comment, should_terminal,
+                                        chosen_categories, icon)
+    if status == "Created":
+        print(".desktop file successfully created!")
+    elif status == "Already exists":
+        print(".desktop file already exists!")
+
+
+def install_wrap_up(program):
+    """End of Install.
+
+    Runs at the end of an install to ask users about different "shortcut" creations/PATH creation
+
+    Args:
+        program (str): Name of program
+
+    """
+    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
+    if yn == 'y':
+        pathify(program)
+    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
+    if yn == 'y':
+        binlink(program)
+    yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
+    if yn == 'y':
+        desktop_wizard(program)
+
+
 def manage(program):
     """Manage Installed Program.
 
@@ -36,7 +173,7 @@ def manage(program):
     """
     if not program in config.db["programs"]:
         print("{} not installed!".format(program))
-        generic.leave(1)
+        sys.exit(1)
     while True:
         print("Enter an option to manage " + program + ":")
         print("b - Create binlinks for " + program)
@@ -50,21 +187,9 @@ def manage(program):
         print("E - Exit program management")
         option = generic.get_input("[b/p/n/u/r/d/rd/s/E]", ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e'], 'e')
         if option == 'b':
-            yn = 'y'
-            while yn != 'n':
-                files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
-                print(' '.join(files))
-                file_chosen = 'Cool fact. This line was originally written on line 163.'
-                while file_chosen not in files:
-                    file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
-                    if file_chosen == "exit":
-                        return
-                prog_manage.add_binlink(file_chosen, program)
-                yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
+            binlink(program)
         elif option == 'p':
-            status = prog_manage.pathify(program)
-            if status == "Complete":
-                print("Program added to PATH!")
+            pathify(program)
         elif option == 'n':
             new_name = "!"
             while not new_name.replace("_", "").replace("-", "").isalnum():
@@ -74,57 +199,13 @@ def manage(program):
             program = prog_manage.rename(program, new_name)
         elif option == 'u':
             prog_manage.uninstall(program)
-            generic.leave()
+            break
         elif option == 'r':
             status = prog_manage.remove_paths_and_binlinks(program)
             if status == "Complete":
                 print("Removal of PATHs and binlinks complete!")
         elif option == 'd':
-            files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
-            print(' '.join(files))
-            program_file = '/Placeholder/'
-            config.vprint("Getting user inputs")
-            while program_file not in files:
-                program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
-                if program_file == "exit":
-                    return
-            comment = "/"
-            while not comment.replace(" ", "").isalnum() and comment != "":
-                comment = input("Please input a comment for the application: ")
-            icon = ";"
-            while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
-                icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
-            terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
-            if terminal.lower() == 'y':
-                should_terminal = "True"
-            else:
-                should_terminal = "False"
-            name = "/"
-            while not name.replace(" ", "").isalnum() and name != "":
-                name = input("Please enter a name: ")
-            if name == "":
-                name = program
-            ans = " "
-            chosen_categories = []
-            categories = ["audio", "video", "development", "education", "game", "graphics", "network", "office",
-                          "science",
-                          "settings", "system", "utility", "end"]
-            while ans.lower() != "end":
-                print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
-                      "Utility). Type \"end\" to end category selection. \n")
-                print(", ".join(categories))
-                ans = generic.get_input("", categories, "Utility")
-                if ans.capitalize() in chosen_categories or ans == "end":
-                    pass
-                else:
-                    ans = ans.capitalize()
-                    chosen_categories.append(ans)
-            status = prog_manage.create_desktop(program, name, program_file, comment, should_terminal,
-                                                chosen_categories, icon)
-            if status == "Created":
-                print(".desktop file successfully created!")
-            elif status == "Already exists":
-                print(".desktop file already exists!")
+            desktop_wizard(program)
         elif option == 'rd':
             print("Desktops: ")
             for d in config.db["programs"][program]["desktops"]:
@@ -141,7 +222,7 @@ def manage(program):
             else:
                 call(["/bin/bash"])
         elif option == 'e':
-            generic.leave()
+            break
 
 
 def parse_args():
@@ -194,8 +275,6 @@ def parse_args():
         else:
             print('hamstall not installed.')
             config.unlock()
-            sys.exit(0)
-        generic.leave()
     
     elif status == "Root":
         print("Don't use sudo unless you want your programs installed for root and only root!")
@@ -208,7 +287,7 @@ def parse_args():
         status = prog_manage.pre_install(args.install)
         if status == "Bad file":
             print("The specified file does not exist!")
-            generic.leave(1)
+            sys.exit(1)
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                       ["r", "o", "n"], "n")  # Ask to reinstall
@@ -218,16 +297,28 @@ def parse_args():
                 status = prog_manage.pre_install(args.install, True)
             else:
                 print("Reinstall cancelled.")
-                generic.leave()
+        if status == "Installed":
+            install_wrap_up(args.install)
+        elif status.startswith("No"):
+            print("{} needs to be installed! Installation halted.".format(status[3:]))
+        elif status == "No rsync":
+            print("rsync not installed! Please install it!")
+            sys.exit(1)
+        elif status == "Bad name":
+            print("Archive name cannot contain a space or #!")
+            sys.exit(1)
+        elif status == "Error":
+            print("Error occured while extracting archive!")
+            sys.exit(1)
 
     elif args.gitinstall is not None:
         status = prog_manage.pre_gitinstall(args.gitinstall)
         if status == "No git":
             print("git not installed! Please install it before using this feature!")
-            generic.leave(1)
+            sys.exit(1)
         elif status == "Bad URL":
             print("Invalid URL supplied; make sure it ends in .git!")
-            generic.leave(1)
+            sys.exit(1)
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                             ["r", "o", "n"], "n")  # Ask to reinstall
@@ -237,14 +328,21 @@ def parse_args():
                 status = prog_manage.pre_gitinstall(args.gitinstall, True)
             else:
                 print("Reinstall cancelled.")
-                generic.leave()
+        if status == "Installed":
+            install_wrap_up(args.gitinstall)
+        elif status == "No rsync":
+            print("rsync not installed! Please install it!")
+            sys.exit(1)
+        elif status == "Error":
+            print("An error occured while attempting to git clone!")
+            sys.exit(1)
 
 
     elif args.dirinstall is not None:
         status = prog_manage.pre_dirinstall(args.dirinstall)
         if status == "Bad folder":
             print("Please specify a valid directory path that ends in a \"/\"!")
-            generic.leave(1)
+            sys.exit(1)
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n")
             if reinstall == 'r':
@@ -253,7 +351,11 @@ def parse_args():
                 status = prog_manage.pre_dirinstall(args.dirinstall, True)
             else:
                 print("Reinstall cancelled.")
-                generic.leave()
+        if status == "Installed":
+            install_wrap_up(args.dirinstall)
+        elif status == "No rsync":
+            print("rsync not installed! Please install it!")
+            sys.exit(1)
 
     elif args.remove is not None:
         status = prog_manage.uninstall(args.remove)
@@ -261,7 +363,6 @@ def parse_args():
             print("Successfully uninstalled {}!".format(args.remove))
         elif status == "Not installed":
             print("{} isn't an installed program!".format(args.remove))
-        generic.leave()
 
     elif args.manage is not None:
         #Managing will mostly be done here instead of in prog_manage
@@ -292,7 +393,6 @@ def parse_args():
                 print('Erase cancelled.')
         else:
             print('Erase cancelled.')
-        generic.leave()
 
     elif args.verbose:
         status = prog_manage.verbose_toggle()
@@ -325,7 +425,8 @@ For help, type "hamstall -h"
         """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"),
                 prog_version=config.get_version("prog_internal_version")))
 
-    generic.leave()  # Catch all to make sure we unlock at the end of code execution
+    config.unlock()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

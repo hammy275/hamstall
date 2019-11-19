@@ -12,6 +12,5 @@ def test_reset(monkeypatch):
 
     prog_manage.first_time_setup(True)
 
-    with pytest.raises(SystemExit):
-        monkeypatch.setattr('sys.stdin', StringIO("n\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\n"))
-        prog_manage.install("./tests/fake_packages/package.tar.gz")
+    monkeypatch.setattr('sys.stdin', StringIO("n\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\n"))
+    prog_manage.install("./tests/fake_packages/package.tar.gz")

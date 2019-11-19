@@ -56,11 +56,10 @@ def hamstall_startup(start_fts=False, del_lock=False):
     if config.locked():  # Lock check
         config.vprint("Lock file detected at /tmp/hamstall-lock.")
         if del_lock:
-            config.vprint("Delete the lock!")
+            config.vprint("Deleting the lock and continuing execution!")
             config.unlock()
-            generic.leave()
         else:
-            config.vprint("Lock file removal not specified; locking.")
+            config.vprint("Lock file removal not specified; staying locked.")
             return "Locked"
     else:
         config.lock()
@@ -121,7 +120,7 @@ def hamstall_startup(start_fts=False, del_lock=False):
             file_version = get_file_version('file')
         except KeyError:
             file_version = 1
-        config.save()
+        config.write_db()
 
     if get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of hamstall
         return "Old"
@@ -159,12 +158,12 @@ def pre_install(program, overwrite=None):
         else:
             if not overwrite:
                 uninstall(program_internal_name)
-                install(program)  # Reinstall
+                return install(program)  # Reinstall
             elif overwrite:
-                install(program, True)
+                return install(program, True)
     else:
-        install(program)  # No reinstall needed to be asked, install program
-    config.save()
+        return install(program)  # No reinstall needed to be asked, install program
+    config.write_db()
 
 
 def pre_gitinstall(program, overwrite=None):
@@ -190,12 +189,12 @@ def pre_gitinstall(program, overwrite=None):
             else:
                 if not overwrite:
                     uninstall(program_internal_name)
-                    gitinstall(program, program_internal_name)
+                    return gitinstall(program, program_internal_name)
                 elif overwrite:
-                    gitinstall(program, program_internal_name, True)
+                    return gitinstall(program, program_internal_name, True)
         else:
-            gitinstall(program, program_internal_name)
-    config.save()
+            return gitinstall(program, program_internal_name)
+    config.write_db()
 
 
 def pre_dirinstall(program, overwrite=None):
@@ -208,12 +207,12 @@ def pre_dirinstall(program, overwrite=None):
             return "Application exists"
         elif not overwrite:
             uninstall(program_internal_name)
-            dirinstall(program, program_internal_name)
+            return dirinstall(program, program_internal_name)
         elif overwrite:
-            dirinstall(program, program_internal_name, True)
+            return dirinstall(program, program_internal_name, True)
     else:
-        dirinstall(program, program_internal_name)
-    config.save()
+        return dirinstall(program, program_internal_name)
+    config.write_db()
 
 
 def create_db():
@@ -238,14 +237,6 @@ def create_db():
 
 def branch_wizard():
     """Switch Branches."""
-    if get_online_version("prog", "master") <= 18:
-        extra_warning = """
-hamstall stable release 1.2.0 hasn't happened yet!
-You cannot reset to the older version of hamstall! You must stay on this version!
-###############
-        """
-    else:
-        extra_warning = ""
     print("""\n\n
 ####WARNING####
 WARNING: You are changing branches of hamstall!
@@ -255,12 +246,12 @@ or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES U
 
 Switching branches will trigger an immediate update of hamstall!
 ###############
-{extra_warning}
+
 Select a branch:
 m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
-    """.format(extra_warning=extra_warning))
+    """)
     ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
     if ans == 'e':
         print("Not changing branches!")
@@ -345,37 +336,6 @@ E - Exit branch wizard and don't change branches.
                 sys.exit(0)
 
 
-def configure():
-    """Change hamstall Options."""
-    while True:
-        print("""
-Select an option:
-au - Enable/disable the ability to install updates when hamstall is run. Currently {au}.
-v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
-b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
-e - Exit hamstall
-        """.format(
-            au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
-            b=config.db["version"]["branch"]
-        ))
-        option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
-        if option == 'au':
-            if not can_update:
-                print("requests isn't installed, so AutoInstall cannot be enabled!")
-            else:
-                key = "AutoInstall"
-        elif option == 'v':
-            key = "Verbose"
-        elif option == 'b':
-            branch_wizard()
-            key = None
-        elif option == 'e':
-            generic.leave()
-        if key is not None:
-            new_value = config.change_config(key, "flip")
-            print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
-
-
 def remove_desktop(program, desktop):
     """Remove .desktop
 
@@ -392,7 +352,7 @@ def remove_desktop(program, desktop):
     except FileNotFoundError:
         pass
     config.db["programs"][program]["desktops"].remove(desktop)
-    config.save()
+    config.write_db()
 
 
 def remove_paths_and_binlinks(program):
@@ -429,7 +389,7 @@ def rename(program, new_name):
     "'cd " + config.full('~/.hamstall/bin/' + new_name), "~/.hamstall/.bashrc")
     config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
     move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
-    config.save()
+    config.write_db()
     return new_name
 
 
@@ -441,6 +401,9 @@ def finish_install(program_internal_name):
     Args:
         program_internal_name (str): Name of program as stored in the database
 
+    Returns:
+        str: "Installed".
+
     """
     config.vprint("Removing temporary install directory (if it exists)")
     try:
@@ -450,19 +413,7 @@ def finish_install(program_internal_name):
     config.vprint("Adding program to hamstall list of programs")
     config.db["programs"].update({program_internal_name: {"desktops": []}})
     config.write_db()
-    """
-    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y')
-    if yn == 'y':
-        pathify(program_internal_name)
-    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n')
-    if yn == 'y':
-        binlink(program_internal_name)
-    yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
-    if yn == 'y':
-        create_desktop(program_internal_name)
-    """
-    print("Install complete!")
-    generic.leave()
+    return "Installed"
 
 
 def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon=""):
@@ -518,6 +469,7 @@ Categories={categories}
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
     config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+    config.write_db()
     return "Created"
 
 
@@ -531,10 +483,12 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         program_internal_name (str): Name of program to use
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
+    Returns:
+       str: A string from finish_install(), "No rsync" or "Error"
+
     """
     if not config.check_bin("rsync") and overwrite:
-        print("rsync not installed! Please install it.")
-        generic.leave(1)
+        return "No rsync"
     config.vprint("Downloading git repository")
     if overwrite:
         try:
@@ -547,8 +501,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         os.chdir(config.full("~/.hamstall/bin"))
     err = call(["git", "clone", git_url])
     if err != 0:
-        print("Error detected! Installation halted.")
-        generic.leave(1)
+        return "Error"
     if overwrite:
         call(["rsync", "-a", "/tmp/hamstall-temp/{}/".format(program_internal_name), config.full("~/.hamstall/bin/{}".format(program_internal_name))])
     finish_install(program_internal_name)
@@ -606,7 +559,7 @@ def update():
         config.vprint("Downloading new hamstall pys..")
         download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
         config.db["version"]["prog_internal_version"] = final_version
-        config.save()
+        config.write_db()
         return "Updated"
     elif final_version < prog_version_internal:
         return "Newer version"
@@ -708,7 +661,7 @@ def create_command(file_extension, program):
         overwrite_files (bool): Whether or not the command should overwrite files. Defaults to False.
 
     Returns:
-        str: Command to run
+        str: Command to run, "Bad Filetype", or "No bin_that_is_needed"
 
     """
     if config.vcheck():  # Creates the command to run to extract the archive
@@ -733,25 +686,23 @@ def create_command(file_extension, program):
         command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
         if which("tar") is None:
             print("tar not installed; please install it to install .tar.gz and .tar.xz files!")
-            generic.leave()
+            return "No tar"
     elif file_extension == '.zip':
         command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
         if which("unzip") is None:
             print("unzip not installed; please install it to install ZIP files!")
-            generic.leave()
+            return "No unzip"
     elif file_extension == '.7z':
         command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
         if which("7z") is None:
-            print("7z not installed; please install it to install 7z files!")
-            generic.leave()
+            return "No 7z"
     elif file_extension == '.rar':
         command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
         if which("unrar") is None:
-            print("unrar not installed; please install it to install RAR files!")
-            generic.leave()
+            return "No unrar"
     else:
         print('Error! File type not supported!')
-        generic.leave(1)
+        return "Bad Filetype"
     config.vprint("Running command: " + command_to_go)
     return command_to_go
 
@@ -765,14 +716,15 @@ def install(program, overwrite=False):
         program (str): Path to archive to install
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
+    Returns:
+       str: A string from finish_install() a string from create_command(), "No rsync", "Bad name", or "Error"
+
     """
     if not config.check_bin("rsync") and overwrite:
-        print("rsync not installed! Please install it.")
-        generic.leave(1)
+        return "No rsync"
     program_internal_name = config.name(program)
     if config.char_check(program_internal_name):
-        print("Error! Archive name contains a space or #!")
-        generic.leave(1)
+        return "Bad name"
     config.vprint("Removing old temp directory (if it exists!)")
     try:
         rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
@@ -785,12 +737,14 @@ def install(program, overwrite=False):
     program = config.spaceify(program)
     command_to_go = create_command(file_extension, program)
     config.vprint('File type detected: ' + file_extension)
+    if command_to_go.startswith("No") or command_to_go == "Bad Filetype":
+        return command_to_go
     try:
         os.system(command_to_go)  # Extracts program archive
     except:
         print('Failed to run command: ' + command_to_go + "!")
         print("Program installation halted!")
-        generic.leave(1)
+        return "Error"
     config.vprint('Checking for folder in folder')
     if os.path.isdir(config.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
@@ -815,7 +769,7 @@ def install(program, overwrite=False):
         rmtree(config.full("/tmp/hamstall-temp"))
     except FileNotFoundError:
         config.vprint('Temp folder not found so not deleted!')
-    finish_install(program_internal_name)
+    return finish_install(program_internal_name)
 
 
 def dirinstall(program_path, program_internal_name, overwrite=False):
@@ -828,17 +782,19 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
         program_internal_name (str): Name of program
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
+    Returns:
+       str: A string from finish_install() or "No rsync"
+
     """
     if not config.check_bin("rsync") and overwrite:
-        print("rsync not installed! Please install it.")
-        generic.leave(1)
+        return "No rsync"
     config.vprint("Moving folder to hamstall destination")
     if overwrite:
         call(["rsync", "-a", program_path, config.full("~/.hamstall/bin/{}".format(program_internal_name))])
         rmtree(program_path)
     else:
         move(program_path, config.full("~/.hamstall/bin/"))
-    finish_install(program_internal_name)
+    return finish_install(program_internal_name)
 
 
 def uninstall(program):
@@ -866,6 +822,7 @@ def uninstall(program):
                 pass
     config.vprint("Removing program from hamstall list of programs")
     del config.db["programs"][program]
+    config.write_db()
     return "Success"
 
 

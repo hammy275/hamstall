@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 32
+prog_internal_version = 33
 file_version = 5
 
 #############
@@ -85,9 +85,7 @@ def read_config(key):
         elif key == "ShellFile":
             return get_shell_file()
         else:
-            print("Attempted to read a config value that doesn't exist!")
-            sys.exit(2)
-
+            return "Bad Value"
 
 def change_config(key, mode, value=None):
     """Change Config Value.
@@ -189,6 +187,8 @@ def write_db():
         print("The database has been dumped to the screen; you should keep a copy of it.")
         print("You may be able to restore hamstall to working order by placing the above" +
               " database dump into a file called \"database\" in ~/.hamstall")
+        print("Rest in peace if you're not in a CLI app right now...")
+        unlock()
         sys.exit(3)
 
 
@@ -430,7 +430,7 @@ Database structure
 """
 
 
-def get_db():
+def get_db(db_check=""):
     """Get Database.
 
     Returns:
@@ -443,20 +443,15 @@ def get_db():
     except FileNotFoundError:
         db = {}
     except json.decoder.JSONDecodeError:
-        db_check = ""
-        while not (db_check in ['u', 'n']):
-            db_check = input("Database is corrupt, unreadable, or in a bad format! "
-                            "Are you upgrading hamstall from an extremely early version, or are you not? [u/n]")
-        if db_check == 'u':
-            db = {}
-        else:
-            print("Please check your database! Something is horrendously wrong...")
-            sys.exit(1)
+        db = {}
+        print("We're upgrading from an extremely old version of hamstall!")
+        print("Using empty database file...")
     return db
 
 
 db = get_db()
 verbose = vcheck()
+
 try:
     branch = db["version"]["branch"]
 except KeyError:

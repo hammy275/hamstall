@@ -27,6 +27,63 @@ import config
 from subprocess import call
 
 
+def branch_wizard():
+    """Switch Branches."""
+    print("""\n\n
+####WARNING####
+WARNING: You are changing branches of hamstall!
+Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
+Changing from beta to master means you will either HAVE ALL OF YOUR HAMSTALL PROGRAMS DELETED
+or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES UP!
+
+Switching branches will trigger an immediate update of hamstall!
+###############
+
+Select a branch:
+m - Master branch. Less bugs, more stable, wait for updates.
+b - Beta branch. More bugs, less stable, updates asap.
+E - Exit branch wizard and don't change branches.
+    """)
+    ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
+    if ans == 'e':
+        print("Not changing branches!")
+        return
+    elif ans == 'm' and config.db["version"]["branch"] == "master":
+        print("Already on the master branch, not switching!")
+        return
+    elif ans == 'b' and config.db["version"]["branch"] == "beta":
+        print("Already on the beta branch, not switching!")
+        return
+    else:
+        check = input('Type "YES" (without the quotes) to confirm the branch switch! ')
+        if check != "YES":
+            print("Cancelling branch switch.")
+            return
+        else:
+            if ans == "m":
+                branch = "master"
+                should_reset = generic.get_input("Would you like to reset hamstall or wait for master to update past where you are? [r/W]",
+                ["r", "w"], "w")
+            elif ans == "b":
+                branch = "beta"
+                should_reset = "w"
+            status = prog_manage.change_branch(branch, should_reset == "r")
+            if status == "Success":
+                print("Successfully switched to the beta branch!")
+                return
+            elif status == "Bad branch":
+                print("Invalid branch specified!")
+                return
+            elif status == "Reset":
+                print("Successfully switched to the master branch and reset hamstall!")
+                print("Please run hamstall again to finish the downgrade process!")
+                return
+            elif status == "Waiting":
+                print("Successfully switched to the master branch!")
+                print("When the master branch is a newer version than the beta one, the next update will bring you up to master.")
+                return
+
+
 def configure():
     """Change hamstall Options."""
     while True:
@@ -282,6 +339,12 @@ def parse_args():
     elif status == "Old":
         print("You are using an extremely outdated version of hamstall, please update manually!")
         sys.exit(1)
+    
+    elif status == "Old upgrade":
+        print("You are upgrading from a VERY old version of hamstall.")
+        print("Press ENTER to continue and wipe your database in the upgrade process!")
+        input("")
+        prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock, old_upgrade=True)
 
     if args.install is not None:
         status = prog_manage.pre_install(args.install)
@@ -408,6 +471,12 @@ def parse_args():
             print("No update was found!")
         elif status == "Updated":
             print("hamstall successfully updated!")
+        elif status == "Failed":
+            print("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
+            sys.exit(1)
+        elif status == "No requests":
+            print("requests isn't installed, please install it before updating!")
+            sys.exit(1)
 
     elif args.config:
         #Configure will be moved to here instead of being in prog_manage

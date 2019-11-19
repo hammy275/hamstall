@@ -36,7 +36,77 @@ import config
 import generic
 
 
-def hamstall_startup(start_fts=False, del_lock=False):
+def change_branch(branch, reset=False):
+    """Change Branch.
+
+    Args:
+        branch (str): Branch to change to (master or beta)
+        reset (bool): If changing to stable, whether or not to reset hamstall. Defaults to False.
+
+    Returns:
+        str: "Bad branch" if switching to an invalid branch, "Success" on master --> beta,
+        "Reset" if beta --> master and reset is complete, or "Waiting" if beta --> master
+        without doing the reset.
+
+    """
+    if branch == "master":
+        if not config.check_bin("git"):
+            reset = False
+    if branch not in ["master", "beta"]:
+        return "Bad branch"
+    config.vprint("Switching branch and writing change to file")
+    config.db["version"]["branch"] = branch
+    config.write_db()
+    if branch == "beta":
+        config.vprint("Updating hamstall...")
+        update(True)
+        return "Success"
+    elif branch == "master":
+        if reset:
+            config.vprint("Deleting and re-installing hamstall.")
+            os.chdir(config.full("~/.hamstall"))
+            config.vprint("Removing old hamstall .pys")
+            for i in os.listdir():
+                i_num = len(i) - 3
+                if i[i_num:len(i)] == '.py':
+                    try:
+                        os.remove(i)
+                    except FileNotFoundError:
+                        pass
+            try:
+                rmtree("/tmp/hamstall-temp")
+            except FileNotFoundError:
+                pass
+            os.mkdir("/tmp/hamstall-temp")
+            os.chdir("/tmp/hamstall-temp")
+            config.vprint("Cloning hamstall from the master branch")
+            call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
+            os.chdir("/tmp/hamstall-temp/hamstall")
+            config.vprint("Adding new hamstall .pys")
+            for i in os.listdir():
+                i_num = len(i) - 3
+                if i[i_num:len(i)] == '.py':
+                    copyfile(i, config.full('~/.hamstall/' + i))
+            config.vprint("Removing old database and programs.")
+            try:
+                os.remove(config.full("~/.hamstall/database"))
+            except FileNotFoundError:
+                pass
+            try:
+                rmtree(config.full("~/.hamstall/bin"))
+            except FileNotFoundError:
+                pass
+            os.mkdir(config.full("~/.hamstall/bin"))
+            print("Please run hamstall again to re-create the database!")
+            config.db = {"refresh": True}
+            config.write_db()
+            config.unlock()
+            return "Reset"
+        else:
+            return "Waiting"
+
+
+def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     """Run on Startup.
 
     Runs on hamstall startup to perform any required checks and upgrades.
@@ -48,9 +118,11 @@ def hamstall_startup(start_fts=False, del_lock=False):
 
     Returns:
         str: One of many different values indicating the status of hamstall. Those include:
-        "Not installed", "Locked", "Good" (nothing bad happened), "Root" and "Old" (happens
-        when upgrading from hamstall prog_version 1). Can also return a string from
-        first_time_setup.
+        "Not installed", "Locked", "Good" (nothing bad happened), "Root", "Old" (happens
+        when upgrading from hamstall prog_version 1), and "Old upgrade" if hamstall
+        needs to upgrade but it would wipe the database during the upgrade
+        process.
+        Can also return a string from first_time_setup.
 
     """
     if config.locked():  # Lock check
@@ -84,9 +156,9 @@ def hamstall_startup(start_fts=False, del_lock=False):
         file_version = 1
     while config.get_version('file_version') > file_version:
         if file_version == 1:
-            print("Removing database config. This will corrupt which programs are installed!")
-            print("If you are using hamstall, please contact hammy3502 for an upgrade process.")
-            input("Press ENTER to continue...")
+            if not old_upgrade:
+                config.unlock()
+                return "Old upgrade"
             try:
                 config.vprint("Removing old database")
                 os.remove(config.full("~/.hamstall/database"))
@@ -233,107 +305,6 @@ def create_db():
     }
     config.db = db_template
     config.write_db()
-
-
-def branch_wizard():
-    """Switch Branches."""
-    print("""\n\n
-####WARNING####
-WARNING: You are changing branches of hamstall!
-Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
-Changing from beta to master means you will either HAVE ALL OF YOUR HAMSTALL PROGRAMS DELETED
-or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES UP!
-
-Switching branches will trigger an immediate update of hamstall!
-###############
-
-Select a branch:
-m - Master branch. Less bugs, more stable, wait for updates.
-b - Beta branch. More bugs, less stable, updates asap.
-E - Exit branch wizard and don't change branches.
-    """)
-    ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
-    if ans == 'e':
-        print("Not changing branches!")
-        generic.leave()
-    elif ans == 'm' and config.db["version"]["branch"] == "master":
-        print("Already on the master branch, not switching!")
-        generic.leave()
-    elif ans == 'b' and config.db["version"]["branch"] == "beta":
-        print("Already on the beta branch, not switching!")
-        generic.leave()
-    else:
-        check = input('Type "YES" (without the quotes) to confirm the branch switch! ')
-        if check != "YES":
-            print("Cancelling branch switch.")
-            generic.leave()
-        if ans == 'm':
-            branch = "master"
-            if not config.check_bin("git"):
-                print("Git is not installed! Your branch can be switched, but downgrading is impossible! "
-                "If you would like to exit here, type \"y\"!")
-                if generic.get_input("", ['y','n'], 'n') == 'y':
-                    print("Branch has not been changed!")
-                    generic.leave(1)
-                else:
-                    print("Continuing with branch switch.")
-        elif ans == 'b':
-            branch = "beta"
-        print("Changing branches and updating hamstall!")
-        config.vprint("Switching branch and writing change to file")
-        config.db["version"]["branch"] = branch
-        config.write_db()
-        if branch == "beta":
-            config.vprint("Updating hamstall...")
-            update(True)
-            generic.leave(0)
-        elif branch == "master":
-            if get_online_version("prog", "master") <= 18:
-                print("Cannot downgrade; staying on this version until master catches up!")
-                generic.leave(0)
-            print("Would you like to downgrade? If you do, all hamstall programs will be deleted!")
-            dr = generic.get_input("If you don't, hamstall will remain at its current version until master is at a newer release! [y/N]",
-            ['y', 'n'], 'n')
-            if dr == 'y':
-                config.vprint("Deleting and re-installing hamstall.")
-                os.chdir(config.full("~/.hamstall"))
-                config.vprint("Removing old hamstall .pys")
-                for i in os.listdir():
-                    i_num = len(i) - 3
-                    if i[i_num:len(i)] == '.py':
-                        try:
-                            os.remove(i)
-                        except FileNotFoundError:
-                            pass
-                try:
-                    rmtree("/tmp/hamstall-temp")
-                except FileNotFoundError:
-                    pass
-                os.mkdir("/tmp/hamstall-temp")
-                os.chdir("/tmp/hamstall-temp")
-                config.vprint("Cloning hamstall from the master branch")
-                call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
-                os.chdir("/tmp/hamstall-temp/hamstall")
-                config.vprint("Adding new hamstall .pys")
-                for i in os.listdir():
-                    i_num = len(i) - 3
-                    if i[i_num:len(i)] == '.py':
-                        copyfile(i, config.full('~/.hamstall/' + i))
-                config.vprint("Removing old database and programs.")
-                try:
-                    os.remove(config.full("~/.hamstall/database"))
-                except FileNotFoundError:
-                    pass
-                try:
-                    rmtree(config.full("~/.hamstall/bin"))
-                except FileNotFoundError:
-                    pass
-                os.mkdir(config.full("~/.hamstall/bin"))
-                print("Please run hamstall again to re-create the database!")
-                config.unlock()
-                config.db = {"refresh": True}
-                config.write_db()
-                sys.exit(0)
 
 
 def remove_desktop(program, desktop):
@@ -536,8 +507,8 @@ def update():
 
     Returns:
         str: "No requests" if requests isn't installed, "Newer version" if the installed
-        version is newer than the one online, "No update" if there is no update, and
-        "Updated" upon a successful update.
+        version is newer than the one online, "No update" if there is no update,
+        "Updated" upon a successful update, and "Failed" if file downloading failed.
     """
     if not can_update:
         config.vprint("requests isn't installed.")
@@ -545,6 +516,8 @@ def update():
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
     final_version = get_online_version('prog')
+    if final_version == -1:
+        return "No requests"
     config.vprint('Installed internal version: ' + str(prog_version_internal))
     config.vprint('Version on GitHub: ' + str(final_version))
     if final_version > prog_version_internal:
@@ -557,7 +530,9 @@ def update():
             if i[i_num:len(i)] == '.py':
                 os.remove(config.full('~/.hamstall/' + i))
         config.vprint("Downloading new hamstall pys..")
-        download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
+        status = download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
+        if status == "Fail":
+            return "Failed"
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"
@@ -844,11 +819,11 @@ def get_online_version(type_of_replacement, branch=config.branch):
         branch (str): Branch to check version of (default: User's current branch)
     
     Returns:
-        int: The specified version
+        int: The specified version or -1 if it couldn't be retrieved
     """
     if not can_update:
         print("requests library not installed! Exiting...")
-        generic.leave(1)
+        return -1
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
     version_raw = requests.get(version_url)
     version = version_raw.text
@@ -887,7 +862,7 @@ def download_files(files, folder):
     """
     if not can_update:
         print("Cannot download files if the request library isn't installed!")
-        generic.leave(1)
+        return "Fail"
     for i in files:
         r = requests.get(
             "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(config.db["version"]["branch"]) + i)

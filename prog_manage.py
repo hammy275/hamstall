@@ -273,8 +273,7 @@ def pre_gitinstall(program, overwrite=None):
 def pre_dirinstall(program, overwrite=None):
     if not(os.path.isdir(config.full(program))) or program[-1:] != '/':
         return "Bad folder"
-    prog_int_name_temp = program[0:len(program)-1]
-    program_internal_name = config.name(prog_int_name_temp + '.tar.gz')  # Add .tar.gz to make the original function work
+    program_internal_name = config.dirname(program)
     if program_internal_name in config.db["programs"]:
         if overwrite is None:
             return "Application exists"

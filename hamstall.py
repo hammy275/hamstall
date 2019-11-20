@@ -284,19 +284,28 @@ def manage(program):
 
 
 def fts_status(status):
+    """Process First Time Setup Status.
+
+    Args:
+        status (str): Status string from first time setup
+
+    Returns:
+        int: Exit code to exit hamstall with
+
+    """
     if status == "Success":
         print('First time setup complete!')
         print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
         print('Afterwards, you may begin using hamstall with the hamstall command!')
-        sys.exit(0)
+        return 0
 
     elif status == "Already installed":
         print("hamstall is already installed on your system! Cancelling installation.")
-        sys.exit(1)
+        return 1
 
     elif status == "Bad copy":
         print("A file was attempting to be copied, but was deleted during the process! Installation halted.")
-        sys.exit(1)
+        return 1
     
     else:
         return
@@ -307,6 +316,7 @@ def parse_args():
     Parses arguments and runs hamstall startup.
 
     """
+    exit_code = 0
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-i', "--install", help="Install a .tar.gz, .tar.xz, or .zip")
@@ -334,17 +344,17 @@ def parse_args():
 
     elif status == "Unlocked":
         print("hamstall unlocked!")
-        sys.exit(0)
+        exit_code = 0
 
     elif status == "Not installed":
         yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',
                                 ['y', 'n', 'debug'], 'y')
         if yn == 'y':
             prog_manage.first_time_setup(False)
-            fts_status(status)
+            exit_code = fts_status(status)
         elif yn == 'debug':
             prog_manage.first_time_setup(True)
-            fts_status(status)
+            exit_code = fts_status(status)
         else:
             print('hamstall not installed.')
             config.unlock()
@@ -366,7 +376,7 @@ def parse_args():
         status = prog_manage.pre_install(args.install)
         if status == "Bad file":
             print("The specified file does not exist!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                       ["r", "o", "n"], "n")  # Ask to reinstall
@@ -376,28 +386,28 @@ def parse_args():
                 status = prog_manage.pre_install(args.install, True)
             else:
                 print("Reinstall cancelled.")
-        if status == "Installed":
+        elif status == "Installed":
             install_wrap_up(config.name(args.install))
         elif status.startswith("No"):
             print("{} needs to be installed! Installation halted.".format(status[3:]))
         elif status == "No rsync":
             print("rsync not installed! Please install it!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Bad name":
             print("Archive name cannot contain a space or #!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Error":
             print("Error occured while extracting archive!")
-            sys.exit(1)
+            exit_code = 1
 
     elif args.gitinstall is not None:
         status = prog_manage.pre_gitinstall(args.gitinstall)
         if status == "No git":
             print("git not installed! Please install it before using this feature!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Bad URL":
             print("Invalid URL supplied; make sure it ends in .git!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                             ["r", "o", "n"], "n")  # Ask to reinstall
@@ -411,17 +421,17 @@ def parse_args():
             install_wrap_up(config.name(args.gitinstall))
         elif status == "No rsync":
             print("rsync not installed! Please install it!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Error":
             print("An error occured while attempting to git clone!")
-            sys.exit(1)
+            exit_code = 1
 
 
     elif args.dirinstall is not None:
         status = prog_manage.pre_dirinstall(args.dirinstall)
         if status == "Bad folder":
             print("Please specify a valid directory path that ends in a \"/\"!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n")
             if reinstall == 'r':
@@ -431,10 +441,10 @@ def parse_args():
             else:
                 print("Reinstall cancelled.")
         if status == "Installed":
-            install_wrap_up(config.name(args.dirinstall))
+            install_wrap_up(config.dirname(args.dirinstall))
         elif status == "No rsync":
             print("rsync not installed! Please install it!")
-            sys.exit(1)
+            exit_code = 1
 
     elif args.remove is not None:
         status = prog_manage.uninstall(args.remove)
@@ -488,10 +498,10 @@ def parse_args():
             print("hamstall successfully updated!")
         elif status == "Failed":
             print("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
-            sys.exit(1)
+            exit_code = 1
         elif status == "No requests":
             print("requests isn't installed, please install it before updating!")
-            sys.exit(1)
+            exit_code = 1
 
     elif args.config:
         prog_manage.configure()
@@ -509,7 +519,7 @@ For help, type "hamstall -h"
                 prog_version=config.get_version("prog_internal_version")))
 
     config.unlock()
-    sys.exit(0)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

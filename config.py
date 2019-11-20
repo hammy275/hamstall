@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 35
+prog_internal_version = 36
 file_version = 5
 
 #############
@@ -192,7 +192,7 @@ def name(program):
     Get the name of a program given the path to its archive/folder.
 
     Args:
-        program (str): Path to program archive/folder
+        program (str): Path to program archive
 
     Returns:
         str: Name of program to use internally
@@ -201,6 +201,24 @@ def name(program):
     program_internal_name = re.sub(r'.*/', '/', program)
     extension_length = len(extension(program))
     program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
+    return program_internal_name
+
+
+def dirname(path):
+    """Get Program Name for Directory
+
+    Args:
+        path (str): Path to program folder
+
+    Returns:
+        str: Name of program to user internall
+
+    """
+    prog_int_name_temp = path[0:len(path)-1]
+    if prog_int_name_temp.startswith('/'):
+        program_internal_name = name(prog_int_name_temp + '.tar.gz')
+    else:
+        program_internal_name = name('/' + prog_int_name_temp + '.tar.gz')
     return program_internal_name
 
 

@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 37
+prog_internal_version = 38
 file_version = 5
 
 #############
@@ -51,11 +51,12 @@ def get_shell_file():
         str: File name in home directory to store PATHs, variables, etc.
 
     """
-    vprint("Auto-detecting shell")
     shell = os.environ["SHELL"]
     if "bash" in shell:
+        vprint("Auto-detected bash")
         return ".bashrc"
     elif "zsh" in shell:
+        vprint("Auto-detected zsh")
         return ".zshrc"
     else:
         vprint("Couldn't auto-detect shell environment! Defaulting to bash...")
@@ -176,6 +177,7 @@ def write_db():
     try:
         with open(full("~/.hamstall/database"), "w") as dbf:
             json.dump(db, dbf)
+        vprint("Database written!")
     except FileNotFoundError:
         print(json.dumps(db))
         print("The hamstall database could not be written to! Something is very wrong...")
@@ -307,6 +309,7 @@ def replace_in_file(old, new, file_path):
         old (str): String to replace
         new (str): String to replace with
         file (str): Path to file to replace strings in
+
     """
     rewrite = """"""
     file_path = full(file_path)
@@ -356,6 +359,7 @@ def create(file_path):
     
     Args:
         file_path (str): Path to file to create
+
     """
     f = open(full(file_path), "w+")
     f.close()
@@ -464,6 +468,8 @@ def get_db(db_check=""):
 
 db = get_db()
 verbose = vcheck()
+if db != {}:
+    vprint("Database loaded successfully!")
 
 try:
     branch = db["version"]["branch"]

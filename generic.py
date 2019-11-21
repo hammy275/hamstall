@@ -15,7 +15,6 @@
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
-import config
 
 
 def get_input(question, options, default):
@@ -57,9 +56,3 @@ def endi(state):
     else:
         return "disabled"
 
-
-def leave(exit_code=0):
-    #Will be removed soon in favor of config.save()
-    config.write_db()
-    config.unlock()
-    sys.exit(exit_code)

@@ -59,7 +59,7 @@ def change_branch(branch, reset=False):
     config.write_db()
     if branch == "beta":
         config.vprint("Updating hamstall...")
-        update(True)
+        update()
         return "Success"
     elif branch == "master":
         if reset:

@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 36
+prog_internal_version = 37
 file_version = 5
 
 #############
@@ -98,18 +98,19 @@ def change_config(key, mode, value=None):
     if mode == 'flip':
         try:
             db["options"][key] = not db["options"][key]
-            return db["options"][key]
+            r = db["options"][key]
         except KeyError:  # All config values are False by default, so this should make them True.
             db["options"].update({key: True})
-            return True
+            r = True
     elif mode == 'change':
         try:
             db["options"][key] = value
-            return value
+            r = value
         except KeyError:
             db["options"].update({key: value})
-            return value
+            r = value
     write_db()
+    return r
 
 
 def vcheck():

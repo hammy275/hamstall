@@ -106,7 +106,7 @@ e - Exit hamstall
         elif option == 'v':
             key = "Verbose"
         elif option == 'b':
-            prog_manage.branch_wizard()
+            branch_wizard()
             key = None
         elif option == 'e':
             return
@@ -484,7 +484,7 @@ def parse_args():
 
     elif args.verbose:
         status = prog_manage.verbose_toggle()
-        print("Verbose mode changed to: {}".format(status))
+        print("Verbose mode {}".format(status))
 
     elif args.update:
         status = prog_manage.update()
@@ -504,7 +504,7 @@ def parse_args():
             exit_code = 1
 
     elif args.config:
-        prog_manage.configure()
+        configure()
 
     else:
         print("""

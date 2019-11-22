@@ -15,7 +15,12 @@
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
+import config
 
+try:
+    import PySimpleGUI as sg
+except ImportError:
+    pass
 
 def get_input(question, options, default):
     """Get User Input.
@@ -31,14 +36,42 @@ def get_input(question, options, default):
         str: Option the user chose
 
     """
-    answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
-    while answer not in options and answer != "":
-        answer = input(question)
-        answer = answer.lower()  # Loop ask question while the answer is invalid or not blank
-    if answer == "":
-        return default  # If answer is blank return default answer
-    else:
-        return answer  # Return answer if it isn't the default answer
+    if config.mode == "cli":
+        answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
+        while answer not in options and answer != "":
+            answer = input(question)
+            answer = answer.lower()  # Loop ask question while the answer is invalid or not blank
+        if answer == "":
+            return default  # If answer is blank return default answer
+        else:
+            return answer  # Return answer if it isn't the default answer
+    elif config.mode == "gui":
+        if len(options) <= 5:
+            button_list = []
+            for o in options:
+                button_list.append(sg.Button(o))
+            layout = [
+                [sg.Text(question)],
+                button_list
+            ]
+            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            while True:
+                event, values = window.read()
+                if event in options:
+                    window.Close()
+                    return event
+        else:
+            layout = [
+                [sg.Text(question)],
+                [sg.Combo(options, key="option"), sg.Button("Submit")]
+            ]
+            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            while True:
+                event, values = window.read()
+                if event == "Submit":
+                    window.Close()
+                    return values["option"]
+
 
 
 def endi(state):
@@ -56,3 +89,9 @@ def endi(state):
     else:
         return "disabled"
 
+
+def pprint(st):
+    if config.mode == "gui":
+        sg.Popup(st)
+    else:
+        print(st)

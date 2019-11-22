@@ -26,10 +26,23 @@ import prog_manage
 import config
 from subprocess import call
 
+mode = config.read_config("Mode")
+
+try:
+    import tkinter
+    del tkinter
+except ImportError:
+    mode = "cli"
+    generic.pprint("Tkinter not installed! Defaulting to cli mode...")
+try:
+    import PySimpleGUI as sg
+except ImportError:
+    mode = "cli"
+    generic.pprint("PySimpleGUI not installed! Defaulting to cli mode...")
 
 def branch_wizard():
     """Switch Branches."""
-    print("""\n\n
+    msg = """\n\n
 ####WARNING####
 WARNING: You are changing branches of hamstall!
 Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
@@ -43,21 +56,22 @@ Select a branch:
 m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
 E - Exit branch wizard and don't change branches.
-    """)
-    ans = generic.get_input("[m/b/E] ", ['m', 'b', 'e'], 'e')
+[m/b/E]"""
+    ans = generic.get_input(msg, ['m', 'b', 'e'], 'e')
     if ans == 'e':
-        print("Not changing branches!")
+        generic.pprint("Not changing branches!")
         return
     elif ans == 'm' and config.db["version"]["branch"] == "master":
-        print("Already on the master branch, not switching!")
+        generic.pprint("Already on the master branch, not switching!")
         return
     elif ans == 'b' and config.db["version"]["branch"] == "beta":
-        print("Already on the beta branch, not switching!")
+        generic.pprint("Already on the beta branch, not switching!")
         return
     else:
-        check = input('Type "YES" (without the quotes) to confirm the branch switch! ')
+        check = generic.get_input('Type "YES" (without the quotes) to confirm the branch switch! ',
+        ["YES", "NO"], "NO")
         if check != "YES":
-            print("Cancelling branch switch.")
+            generic.pprint("Cancelling branch switch.")
             return
         else:
             if ans == "m":
@@ -69,38 +83,39 @@ E - Exit branch wizard and don't change branches.
                 should_reset = "w"
             status = prog_manage.change_branch(branch, should_reset == "r")
             if status == "Success":
-                print("Successfully switched to the beta branch!")
+                generic.pprint("Successfully switched to the beta branch!")
                 return
             elif status == "Bad branch":
-                print("Invalid branch specified!")
+                generic.pprint("Invalid branch specified!")
                 return
             elif status == "Reset":
-                print("Successfully switched to the master branch and reset hamstall!")
-                print("Please run hamstall again to finish the downgrade process!")
+                generic.pprint("Successfully switched to the master branch and reset hamstall!")
+                generic.pprint("Please run hamstall again to finish the downgrade process!")
                 return
             elif status == "Waiting":
-                print("Successfully switched to the master branch!")
-                print("When the master branch is a newer version than the beta one, the next update will bring you up to master.")
+                generic.pprint("Successfully switched to the master branch!")
+                generic.pprint("When the master branch is a newer version than the beta one, the next update will bring you up to master.")
                 return
 
 
 def configure():
     """Change hamstall Options."""
     while True:
-        print("""
+        msg = """
 Select an option:
 au - Enable/disable the ability to install updates when hamstall is run. Currently {au}.
 v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
 b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
+m - Whether or not to use the GUI for hamstall. Currently {gui}.
 e - Exit hamstall
-        """.format(
+[au/v/b/m/E]""".format(
             au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
-            b=config.db["version"]["branch"]
-        ))
-        option = generic.get_input("[au/v/b/E] ", ['au', 'v', 'b', 'e'], 'e')
+            b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui")
+        )
+        option = generic.get_input(msg, ['au', 'v', 'b', 'm', 'e'], 'e')
         if option == 'au':
             if not prog_manage.can_update:
-                print("requests isn't installed, so AutoInstall cannot be enabled!")
+                generic.pprint("requests isn't installed, so AutoInstall cannot be enabled!")
             else:
                 key = "AutoInstall"
         elif option == 'v':
@@ -108,11 +123,17 @@ e - Exit hamstall
         elif option == 'b':
             branch_wizard()
             key = None
+        elif option == 'm':
+            if config.read_config("Mode") == "cli":
+                config.change_config("Mode", "change", "gui")
+            else:
+                config.change_config("Mode", "change", "cli")
+            key = None
         elif option == 'e':
             return
         if key is not None:
             new_value = config.change_config(key, "flip")
-            print("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
+            generic.pprint("\n{key} mode {value}!".format(key=key, value=generic.endi(new_value)))
 
 
 def pathify(program):
@@ -124,7 +145,7 @@ def pathify(program):
     """
     status = prog_manage.pathify(program)
     if status == "Complete":
-        print("Program added to PATH!")
+        generic.pprint("Program added to PATH!")
 
 
 def binlink(program):
@@ -137,7 +158,7 @@ def binlink(program):
     yn = 'y'
     while yn != 'n':
         files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
-        print(' '.join(files))
+        generic.pprint(' '.join(files))
         file_chosen = 'Cool fact. This line was originally written on line 163.'
         while file_chosen not in files:
             file_chosen = input('Please enter a file listed above. If you would like to cancel, type exit: ')
@@ -155,9 +176,8 @@ def desktop_wizard(program):
 
     """
     files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
-    print(' '.join(files))
+    generic.pprint(' '.join(files))
     program_file = '/Placeholder/'
-    config.vprint("Getting user inputs")
     while program_file not in files:
         program_file = input('Please enter a file listed above. If you would like to cancel, type exit: ')
         if program_file == "exit":
@@ -184,9 +204,9 @@ def desktop_wizard(program):
                     "science",
                     "settings", "system", "utility", "end"]
     while ans.lower() != "end":
-        print("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
+        generic.pprint("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
                 "Utility). Type \"end\" to end category selection. \n")
-        print(", ".join(categories))
+        generic.pprint(", ".join(categories))
         ans = generic.get_input("", categories, "Utility")
         if ans.capitalize() in chosen_categories or ans == "end":
             pass
@@ -196,9 +216,9 @@ def desktop_wizard(program):
     status = prog_manage.create_desktop(program, name, program_file, comment, should_terminal,
                                         chosen_categories, icon)
     if status == "Created":
-        print(".desktop file successfully created!")
+        generic.pprint(".desktop file successfully created!")
     elif status == "Already exists":
-        print(".desktop file already exists!")
+        generic.pprint(".desktop file already exists!")
 
 
 def install_wrap_up(program):
@@ -219,7 +239,7 @@ def install_wrap_up(program):
     yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n')
     if yn == 'y':
         desktop_wizard(program)
-    print("Installation complete!")
+    generic.pprint("Installation complete!")
 
 
 def manage(program):
@@ -230,19 +250,19 @@ def manage(program):
 
     """
     if not program in config.db["programs"]:
-        print("{} not installed!".format(program))
+        generic.pprint("{} not installed!".format(program))
         sys.exit(1)
     while True:
-        print("Enter an option to manage " + program + ":")
-        print("b - Create binlinks for " + program)
-        print("p - Add " + program + " to PATH")
-        print("n - Rename " + program)
-        print("u - Uninstall " + program)
-        print("r - Remove all binlinks + PATHs for " + program)
-        print("d - Create a .desktop file for " + program)
-        print("rd - Remove a .desktop file for " + program)
-        print("s - Launch a shell inside " + program + "'s directory")
-        print("E - Exit program management")
+        generic.pprint("Enter an option to manage " + program + ":")
+        generic.pprint("b - Create binlinks for " + program)
+        generic.pprint("p - Add " + program + " to PATH")
+        generic.pprint("n - Rename " + program)
+        generic.pprint("u - Uninstall " + program)
+        generic.pprint("r - Remove all binlinks + PATHs for " + program)
+        generic.pprint("d - Create a .desktop file for " + program)
+        generic.pprint("rd - Remove a .desktop file for " + program)
+        generic.pprint("s - Launch a shell inside " + program + "'s directory")
+        generic.pprint("E - Exit program management")
         option = generic.get_input("[b/p/n/u/r/d/rd/s/E]", ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e'], 'e')
         if option == 'b':
             binlink(program)
@@ -253,7 +273,7 @@ def manage(program):
             while not new_name.replace("_", "").replace("-", "").isalnum():
                 new_name = input("Please enter the name you would like to change this program to: ")
                 if not new_name.replace("_", "").replace("-", "").isalnum():
-                    print("Alphanumeric characters, dashes, and underscores only, please!")
+                    generic.pprint("Alphanumeric characters, dashes, and underscores only, please!")
             program = prog_manage.rename(program, new_name)
         elif option == 'u':
             prog_manage.uninstall(program)
@@ -261,19 +281,19 @@ def manage(program):
         elif option == 'r':
             status = prog_manage.remove_paths_and_binlinks(program)
             if status == "Complete":
-                print("Removal of PATHs and binlinks complete!")
+                generic.pprint("Removal of PATHs and binlinks complete!")
         elif option == 'd':
             desktop_wizard(program)
         elif option == 'rd':
-            print("Desktops: ")
+            generic.pprint("Desktops: ")
             for d in config.db["programs"][program]["desktops"]:
-                print(d)
+                generic.pprint(d)
             inp = "/ choose desktop"
             while not (inp in config.db["programs"][program]["desktops"]) and inp != "exit":
                 inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
             prog_manage.remove_desktop(program, inp)
         elif option == 's':
-            print("When you exit the shell, you will be returned to here.")
+            generic.pprint("When you exit the shell, you will be returned to here.")
             os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
             if config.get_shell_file() == ".zshrc":
                 call(["/bin/zsh"])
@@ -294,17 +314,17 @@ def fts_status(status):
 
     """
     if status == "Success":
-        print('First time setup complete!')
-        print('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
-        print('Afterwards, you may begin using hamstall with the hamstall command!')
+        generic.pprint('First time setup complete!')
+        generic.pprint('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
+        generic.pprint('Afterwards, you may begin using hamstall with the hamstall command!')
         return 0
 
     elif status == "Already installed":
-        print("hamstall is already installed on your system! Cancelling installation.")
+        generic.pprint("hamstall is already installed on your system! Cancelling installation.")
         return 1
 
     elif status == "Bad copy":
-        print("A file was attempting to be copied, but was deleted during the process! Installation halted.")
+        generic.pprint("A file was attempting to be copied, but was deleted during the process! Installation halted.")
         return 1
     
     else:
@@ -339,11 +359,11 @@ def parse_args():
     fts_status(status)
 
     if status == "Locked":
-        print("Another instance of hamstall is probably running! Execution halted!")
+        generic.pprint("Another instance of hamstall is probably running! Execution halted!")
         sys.exit(1)
 
     elif status == "Unlocked":
-        print("hamstall unlocked!")
+        generic.pprint("hamstall unlocked!")
         exit_code = 0
 
     elif status == "Not installed":
@@ -356,26 +376,26 @@ def parse_args():
             prog_manage.first_time_setup(True)
             exit_code = fts_status(status)
         else:
-            print('hamstall not installed.')
+            generic.pprint('hamstall not installed.')
             config.unlock()
     
     elif status == "Root":
-        print("Don't use sudo unless you want your programs installed for root and only root!")
+        generic.pprint("Don't use sudo unless you want your programs installed for root and only root!")
     
     elif status == "Old":
-        print("You are using an extremely outdated version of hamstall, please update manually!")
+        generic.pprint("You are using an extremely outdated version of hamstall, please update manually!")
         sys.exit(1)
     
     elif status == "Old upgrade":
-        print("You are upgrading from a VERY old version of hamstall.")
-        print("Press ENTER to continue and wipe your database in the upgrade process!")
+        generic.pprint("You are upgrading from a VERY old version of hamstall.")
+        generic.pprint("Press ENTER to continue and wipe your database in the upgrade process!")
         input("")
         prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock, old_upgrade=True)
 
     if args.install is not None:
         status = prog_manage.pre_install(args.install)
         if status == "Bad file":
-            print("The specified file does not exist!")
+            generic.pprint("The specified file does not exist!")
             exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
@@ -385,28 +405,28 @@ def parse_args():
             elif reinstall == "o":
                 status = prog_manage.pre_install(args.install, True)
             else:
-                print("Reinstall cancelled.")
+                generic.pprint("Reinstall cancelled.")
         elif status == "Installed":
             install_wrap_up(config.name(args.install))
         elif status.startswith("No"):
-            print("{} needs to be installed! Installation halted.".format(status[3:]))
+            generic.pprint("{} needs to be installed! Installation halted.".format(status[3:]))
         elif status == "No rsync":
-            print("rsync not installed! Please install it!")
+            generic.pprint("rsync not installed! Please install it!")
             exit_code = 1
         elif status == "Bad name":
-            print("Archive name cannot contain a space or #!")
+            generic.pprint("Archive name cannot contain a space or #!")
             exit_code = 1
         elif status == "Error":
-            print("Error occured while extracting archive!")
+            generic.pprint("Error occured while extracting archive!")
             exit_code = 1
 
     elif args.gitinstall is not None:
         status = prog_manage.pre_gitinstall(args.gitinstall)
         if status == "No git":
-            print("git not installed! Please install it before using this feature!")
+            generic.pprint("git not installed! Please install it before using this feature!")
             exit_code = 1
         elif status == "Bad URL":
-            print("Invalid URL supplied; make sure it ends in .git!")
+            generic.pprint("Invalid URL supplied; make sure it ends in .git!")
             exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
@@ -416,21 +436,21 @@ def parse_args():
             elif reinstall == "o":
                 status = prog_manage.pre_gitinstall(args.gitinstall, True)
             else:
-                print("Reinstall cancelled.")
+                generic.pprint("Reinstall cancelled.")
         if status == "Installed":
             install_wrap_up(config.name(args.gitinstall))
         elif status == "No rsync":
-            print("rsync not installed! Please install it!")
+            generic.pprint("rsync not installed! Please install it!")
             exit_code = 1
         elif status == "Error":
-            print("An error occured while attempting to git clone!")
+            generic.pprint("An error occured while attempting to git clone!")
             exit_code = 1
 
 
     elif args.dirinstall is not None:
         status = prog_manage.pre_dirinstall(args.dirinstall)
         if status == "Bad folder":
-            print("Please specify a valid directory path that ends in a \"/\"!")
+            generic.pprint("Please specify a valid directory path that ends in a \"/\"!")
             exit_code = 1
         elif status == "Application exists":
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n")
@@ -439,19 +459,19 @@ def parse_args():
             elif reinstall == 'o':
                 status = prog_manage.pre_dirinstall(args.dirinstall, True)
             else:
-                print("Reinstall cancelled.")
+                generic.pprint("Reinstall cancelled.")
         if status == "Installed":
             install_wrap_up(config.dirname(args.dirinstall))
         elif status == "No rsync":
-            print("rsync not installed! Please install it!")
+            generic.pprint("rsync not installed! Please install it!")
             exit_code = 1
 
     elif args.remove is not None:
         status = prog_manage.uninstall(args.remove)
         if status == "Success":
-            print("Successfully uninstalled {}!".format(args.remove))
+            generic.pprint("Successfully uninstalled {}!".format(args.remove))
         elif status == "Not installed":
-            print("{} isn't an installed program!".format(args.remove))
+            generic.pprint("{} isn't an installed program!".format(args.remove))
 
     elif args.manage is not None:
         manage(args.manage)
@@ -459,10 +479,10 @@ def parse_args():
     elif args.list:
         programs = prog_manage.list_programs()
         if programs == []:
-            print("No programs installed!")
+            generic.pprint("No programs installed!")
         else:
             for p in programs:
-                print(p)
+                generic.pprint(p)
 
     elif args.erase:
         erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]",
@@ -474,40 +494,40 @@ def parse_args():
             if erase_really_sure == 'y':
                 status = prog_manage.erase()
                 if status == "Not installed":
-                    print("hamstall isn't installed, so not removed!")
+                    generic.pprint("hamstall isn't installed, so not removed!")
                 elif status == "Erased":
-                    print("hamstall has been removed!")
+                    generic.pprint("hamstall has been removed!")
             else:
-                print('Erase cancelled.')
+                generic.pprint('Erase cancelled.')
         else:
-            print('Erase cancelled.')
+            generic.pprint('Erase cancelled.')
 
     elif args.verbose:
         status = prog_manage.verbose_toggle()
-        print("Verbose mode {}".format(status))
+        generic.pprint("Verbose mode {}".format(status))
 
     elif args.update:
         status = prog_manage.update()
         if status == "No requests":
-            print("requests isn't installed, please install it!")
+            generic.pprint("requests isn't installed, please install it!")
         elif status == "Newer version":
-            print("The installed version is newer than the one found online!")
+            generic.pprint("The installed version is newer than the one found online!")
         elif status == "No update":
-            print("No update was found!")
+            generic.pprint("No update was found!")
         elif status == "Updated":
-            print("hamstall successfully updated!")
+            generic.pprint("hamstall successfully updated!")
         elif status == "Failed":
-            print("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
+            generic.pprint("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
             exit_code = 1
         elif status == "No requests":
-            print("requests isn't installed, please install it before updating!")
+            generic.pprint("requests isn't installed, please install it before updating!")
             exit_code = 1
 
     elif args.config:
         configure()
 
     else:
-        print("""
+        generic.pprint("""
 hamstall. A Python based package manager to manage archives.
 Written by: hammy3502
 

@@ -189,6 +189,11 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
                 config.vprint("file.py not found, so not deleted!")
             config.db["version"]["file_version"] = 5
             config.vprint("Upgraded from hamstall file version 4 to 5.")
+        elif file_version == 5:
+            config.vprint("Database needs to have the mode key! Adding...")
+            config.db["options"].update({"Mode": "cli"})
+            config.db["version"]["file_version"] = 6
+            config.vprint("Upgraded from hamstall file version 5 to 6.")
         try:
             file_version = get_file_version('file')
         except KeyError:

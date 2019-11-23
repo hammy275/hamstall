@@ -22,7 +22,7 @@ try:
 except ImportError:
     pass
 
-def get_input(question, options, default):
+def get_input(question, options, default, gui_labels=[]):
     """Get User Input.
 
     Get user input, except make sure the input provided matches one of the options we're looking for
@@ -31,6 +31,7 @@ def get_input(question, options, default):
         question (str): Question to ask the user
         options (str[]): List of options the user can choose from
         default (str): Default option (used when user enters nothing)
+        gui_labels (str[]): Labels to use for GUI buttons/dropdown menus (optional)
 
     Returns:
         str: Option the user chose
@@ -46,9 +47,11 @@ def get_input(question, options, default):
         else:
             return answer  # Return answer if it isn't the default answer
     elif config.mode == "gui":
+        if gui_labels == []:
+            gui_labels = options
         if len(options) <= 5:
             button_list = []
-            for o in options:
+            for o in gui_labels:
                 button_list.append(sg.Button(o))
             layout = [
                 [sg.Text(question)],
@@ -57,20 +60,20 @@ def get_input(question, options, default):
             window = sg.Window("hamstall-gui", layout, disable_close=True)
             while True:
                 event, values = window.read()
-                if event in options:
+                if event in gui_labels:
                     window.Close()
-                    return event
+                    return options[gui_labels.index(event)]
         else:
             layout = [
                 [sg.Text(question)],
-                [sg.Combo(options, key="option"), sg.Button("Submit")]
+                [sg.Combo(gui_labels, key="option"), sg.Button("Submit")]
             ]
             window = sg.Window("hamstall-gui", layout, disable_close=True)
             while True:
                 event, values = window.read()
                 if event == "Submit":
                     window.Close()
-                    return values["option"]
+                    return options[gui_labels.index(values["option"])]
 
 
 

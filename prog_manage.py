@@ -814,7 +814,7 @@ def list_programs():
         str[]: List of installed programs by name
     
     """
-    return config.db["programs"].keys()
+    return list(config.db["programs"].keys())
 
 
 def get_online_version(type_of_replacement, branch=config.branch):

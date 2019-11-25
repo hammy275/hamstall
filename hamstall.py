@@ -28,17 +28,73 @@ from subprocess import call
 
 mode = config.read_config("Mode")
 
-try:
-    import tkinter
-    del tkinter
-except ImportError:
-    mode = "cli"
-    generic.pprint("Tkinter not installed! Defaulting to cli mode...")
-try:
-    import PySimpleGUI as sg
-except ImportError:
-    mode = "cli"
-    generic.pprint("PySimpleGUI not installed! Defaulting to cli mode...")
+if mode == "gui":
+    try:
+        import tkinter
+        del tkinter
+    except ImportError:
+        mode = "cli"
+        generic.pprint("Tkinter not installed! Defaulting to cli mode...")
+    try:
+        import PySimpleGUI as sg
+    except ImportError:
+        mode = "cli"
+        generic.pprint("PySimpleGUI not installed! Defaulting to cli mode...")
+
+def gui_loop():
+    to_disable = ["install", "install_browse", "dirinstall", "dirinstall_browse", "gitinstall",
+    "gitinstall_browse", "remove", "manage"]
+    layout = [
+        [sg.Text("Select an option:")],
+        [sg.Radio("Install: ", "Todo", default=True, enable_events=True, key="should_install"), sg.InputText(key="install"), sg.FileBrowse(key="install_browse")],
+        [sg.Radio("Install Directory: ", "Todo", enable_events=True, key="should_dirinstall"), sg.InputText(key="dirinstall", disabled=True), sg.FolderBrowse(disabled=True, key="dirinstall_browse")],
+        [sg.Radio("Gitinstall: ", "Todo", enable_events=True, key="should_gitinstall"), sg.InputText(key="gitinstall", disabled=True), sg.FileBrowse(disabled=True, key="gitinstall_browse")],
+        [sg.Radio("Remove: ", "Todo", enable_events=True, key="should_remove"), sg.Combo(prog_manage.list_programs(), key="remove", disabled=True)],
+        [sg.Radio("Erase hamstall", "Todo", enable_events=True, key="should_erase")],
+        [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
+        [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
+        [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
+        [sg.Button("Go"), sg.Button("Exit")]
+    ]
+    window = sg.Window('hamstall', layout=layout)
+    while True:
+        event, values = window.Read()
+        if event in (None, "Exit"):
+            sys.exit(0)
+        elif event == "Go":
+            if values["should_install"]:
+                parse_args(["--install", values["install"]])
+            elif values["should_dirinstall"]:
+                parse_args(["--dirinstall", values["dirinstall"]])
+            elif values["should_gitinstall"]:
+                parse_args(["--gitinstall", values["gitinstall"]])
+            elif values["should_remove"]:
+                parse_args(["--remove", values["remove"]])
+            elif values["should_erase"]:
+                parse_args(["--erase"])
+            elif values["should_update"]:
+                parse_args(["--update"])
+            elif values["should_manage"]:
+                parse_args(["--manage", values["manage"]])
+            elif values["should_configure"]:
+                parse_args(["--config"])
+        else:
+            for o in to_disable:
+                window.Element(o).Update(disabled=True)
+            if event == "should_install":
+                window.Element("install").Update(disabled=False)
+                window.Element("install_browse").Update(disabled=False)
+            elif event == "should_dirinstall":
+                window.Element("dirinstall").Update(disabled=False)
+                window.Element("dirinstall_browse").Update(disabled=False)
+            elif event == "should_gitinstall":
+                window.Element("gitinstall").Update(disabled=False)
+                window.Element("gitinstall_browse").Update(disabled=False)
+            elif event == "should_remove":
+                window.Element("remove").Update(disabled=False)
+            elif event == "should_manage":
+                window.Element("manage").Update(disabled=False)
+
 
 def branch_wizard():
     """Switch Branches."""
@@ -113,7 +169,7 @@ e - Exit hamstall
             b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui")
         )
         option = generic.get_input(msg, ['au', 'v', 'b', 'm', 'e'], 'e', 
-        ["Autoupdate", "Verbosity", "Change Branches", "Manage hamstall", "Exit"])
+        ["Autoupdate", "Verbosity", "Change Branches", "Change Interaction Mode", "Exit"])
         if option == 'au':
             if not prog_manage.can_update:
                 generic.pprint("requests isn't installed, so AutoInstall cannot be enabled!")
@@ -127,8 +183,10 @@ e - Exit hamstall
         elif option == 'm':
             if config.read_config("Mode") == "cli":
                 config.change_config("Mode", "change", "gui")
+                generic.pprint("Changed to GUI mode!")
             else:
                 config.change_config("Mode", "change", "cli")
+                generic.pprint("Changed to CLI mode!")
             key = None
         elif option == 'e':
             return
@@ -336,7 +394,7 @@ def fts_status(status):
     else:
         return
 
-def parse_args():
+def parse_args(args=None):
     """Argument Parsing.
 
     Parses arguments and runs hamstall startup.
@@ -358,7 +416,10 @@ def parse_args():
     group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
                                                 "running)", action="store_true")
     group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
-    args = parser.parse_args()  # Parser stuff
+    if args is None:
+        args = parser.parse_args()  # Parser stuff
+    else:
+        args = parser.parse_args(args)
 
     status = prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock)
 
@@ -546,8 +607,14 @@ For help, type "hamstall -h"
                 prog_version=config.get_version("prog_internal_version")))
 
     config.unlock()
-    sys.exit(exit_code)
+    if mode == "gui":
+        return
+    elif mode == "cli":
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
-    parse_args()
+    if mode == "cli":
+        parse_args()
+    elif mode == "gui":
+        gui_loop()

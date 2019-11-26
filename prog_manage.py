@@ -35,7 +35,6 @@ except ImportError:
 import config
 import generic
 
-
 def change_branch(branch, reset=False):
     """Change Branch.
 
@@ -52,6 +51,7 @@ def change_branch(branch, reset=False):
     if branch == "master":
         if not config.check_bin("git"):
             reset = False
+            generic.progress(50)
     if branch not in ["master", "beta"]:
         return "Bad branch"
     config.vprint("Switching branch and writing change to file")
@@ -59,9 +59,11 @@ def change_branch(branch, reset=False):
     config.write_db()
     if branch == "beta":
         config.vprint("Updating hamstall...")
+        generic.progress(65)
         update()
         return "Success"
     elif branch == "master":
+        generic.progress(10)
         if reset:
             config.vprint("Deleting and re-installing hamstall.")
             os.chdir(config.full("~/.hamstall"))
@@ -73,20 +75,24 @@ def change_branch(branch, reset=False):
                         os.remove(i)
                     except FileNotFoundError:
                         pass
+            generic.progress(25)
             try:
                 rmtree("/tmp/hamstall-temp")
             except FileNotFoundError:
                 pass
+            generic.progress(30)
             os.mkdir("/tmp/hamstall-temp")
             os.chdir("/tmp/hamstall-temp")
             config.vprint("Cloning hamstall from the master branch")
             call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
+            generic.progress(65)
             os.chdir("/tmp/hamstall-temp/hamstall")
             config.vprint("Adding new hamstall .pys")
             for i in os.listdir():
                 i_num = len(i) - 3
                 if i[i_num:len(i)] == '.py':
                     copyfile(i, config.full('~/.hamstall/' + i))
+            generic.progress(80)
             config.vprint("Removing old database and programs.")
             try:
                 os.remove(config.full("~/.hamstall/database"))
@@ -97,9 +103,11 @@ def change_branch(branch, reset=False):
             except FileNotFoundError:
                 pass
             os.mkdir(config.full("~/.hamstall/bin"))
+            generic.progress(90)
             print("Please run hamstall again to re-create the database!")
             config.db = {"refresh": True}
             config.write_db()
+            generic.progress(95)
             config.unlock()
             return "Reset"
         else:
@@ -358,14 +366,18 @@ def rename(program, new_name):
     for d in config.db["programs"][program]["desktops"]:
         config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
         "~/.local/share/applications/{}.desktop".format(d))
+    generic.progress(25)
     config.db["programs"][new_name] = config.db["programs"].pop(program)
     config.replace_in_file("export PATH=$PATH:~/.hamstall/bin/" + program, 
     "export PATH=$PATH:~/.hamstall/bin/" + new_name, "~/.hamstall/.bashrc")
+    generic.progress(50)
     config.replace_in_file("'cd " + config.full('~/.hamstall/bin/' + program),
     "'cd " + config.full('~/.hamstall/bin/' + new_name), "~/.hamstall/.bashrc")
+    generic.progress(75)
     config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
     move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
     config.write_db()
+    generic.progress(100)
     return new_name
 
 
@@ -381,6 +393,7 @@ def finish_install(program_internal_name):
         str: "Installed".
 
     """
+    generic.progress(90)
     config.vprint("Removing temporary install directory (if it exists)")
     try:
         rmtree("/tmp/hamstall-temp")
@@ -473,9 +486,11 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         os.chdir("/tmp/hamstall-temp")
     else:
         os.chdir(config.full("~/.hamstall/bin"))
+    generic.progress(5)
     err = call(["git", "clone", git_url])
     if err != 0:
         return "Error"
+    generic.progress(65)
     if overwrite:
         call(["rsync", "-a", "/tmp/hamstall-temp/{}/".format(program_internal_name), config.full("~/.hamstall/bin/{}".format(program_internal_name))])
     finish_install(program_internal_name)
@@ -516,6 +531,7 @@ def update():
     if not can_update:
         config.vprint("requests isn't installed.")
         return "No requests"
+    generic.progress(5)
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
     final_version = get_online_version('prog')
@@ -523,6 +539,7 @@ def update():
         return "No requests"
     config.vprint('Installed internal version: ' + str(prog_version_internal))
     config.vprint('Version on GitHub: ' + str(final_version))
+    generic.progress(10)
     if final_version > prog_version_internal:
         print("An update has been found! Installing...")
         config.vprint('Removing old hamstall pys...')
@@ -532,10 +549,12 @@ def update():
             i_num = len(i) - 3
             if i[i_num:len(i)] == '.py':
                 os.remove(config.full('~/.hamstall/' + i))
+        generic.progress(40)
         config.vprint("Downloading new hamstall pys..")
         status = download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
         if status == "Fail":
             return "Failed"
+        generic.progress(75)
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"
@@ -556,6 +575,7 @@ def erase():
         return "Not installed"
     config.vprint('Removing source line from bashrc')
     config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
+    generic.progress(10)
     config.vprint("Removing .desktop files")
     for prog in config.db["programs"]:
         if config.db["programs"][prog]["desktops"]:
@@ -564,8 +584,10 @@ def erase():
                     os.remove(config.full("~/.local/share/applications/{}.desktop".format(d)))
                 except FileNotFoundError:
                     pass
+    generic.progress(40)
     config.vprint('Removing hamstall directory')
     rmtree(config.full('~/.hamstall'))
+    generic.progress(90)
     try:
         rmtree("/tmp/hamstall-temp")
     except FileNotFoundError:
@@ -711,6 +733,7 @@ def install(program, overwrite=False):
         rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
     except FileNotFoundError:
         pass
+    generic.progress(10)
     config.vprint("Creating new temp directory")
     os.mkdir(config.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
     config.vprint("Extracting archive to temp directory")
@@ -726,6 +749,7 @@ def install(program, overwrite=False):
         print('Failed to run command: ' + command_to_go + "!")
         print("Program installation halted!")
         return "Error"
+    generic.progress(50)
     config.vprint('Checking for folder in folder')
     if os.path.isdir(config.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
@@ -744,6 +768,7 @@ def install(program, overwrite=False):
         call(["rsync", "-a{}".format(verbose_flag), source, dest])
     else:
         move(source, dest)
+    generic.progress(80)
     config.vprint("Adding program to hamstall list of programs")
     config.vprint('Removing old temp directory...')
     try:
@@ -767,6 +792,7 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
        str: A string from finish_install() or "No rsync"
 
     """
+    generic.progress(10)
     if not config.check_bin("rsync") and overwrite:
         return "No rsync"
     config.vprint("Moving folder to hamstall destination")
@@ -792,8 +818,10 @@ def uninstall(program):
         return "Not installed"
     config.vprint("Removing program files")
     rmtree(config.full("~/.hamstall/bin/" + program + '/'))
+    generic.progress(20)
     config.vprint("Removing program from PATH and any binlinks for the program")
     config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    generic.progress(30)
     config.vprint("Removing program desktop files")
     if config.db["programs"][program]["desktops"]:
         for d in config.db["programs"][program]["desktops"]:
@@ -801,9 +829,11 @@ def uninstall(program):
                 os.remove(config.full("~/.local/share/applications/{}.desktop".format(d)))
             except FileNotFoundError:
                 pass
+    generic.progress(80)
     config.vprint("Removing program from hamstall list of programs")
     del config.db["programs"][program]
     config.write_db()
+    generic.progress(90)
     return "Success"
 
 

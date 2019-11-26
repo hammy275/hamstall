@@ -21,9 +21,9 @@ import argparse
 import sys
 import getpass
 import shutil
+import config
 import generic
 import prog_manage
-import config
 from subprocess import call
 
 mode = config.read_config("Mode")
@@ -54,11 +54,14 @@ def gui_loop():
         [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
         [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
         [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
-        [sg.Button("Go"), sg.Button("Exit")]
+        [sg.Button("Go"), sg.Button("Exit")],
+        [sg.ProgressBar(100, key="bar")]
     ]
     window = sg.Window('hamstall', layout=layout)
     while True:
         event, values = window.Read()
+        config.install_bar = window.Element("bar")
+        config.install_bar.UpdateBar(0)
         if event in (None, "Exit"):
             sys.exit(0)
         elif event == "Go":
@@ -78,6 +81,7 @@ def gui_loop():
                 parse_args(["--manage", values["manage"]])
             elif values["should_configure"]:
                 parse_args(["--config"])
+            config.install_bar.UpdateBar(100)
         else:
             for o in to_disable:
                 window.Element(o).Update(disabled=True)

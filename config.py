@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 41
+prog_internal_version = 42
 file_version = 6
 
 #############
@@ -471,6 +471,8 @@ def get_db(db_check=""):
 db = get_db()
 verbose = vcheck()
 mode = read_config("Mode")
+
+install_bar = None
 
 if db != {}:
     vprint("Database loaded successfully!")

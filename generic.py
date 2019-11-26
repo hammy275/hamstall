@@ -22,6 +22,12 @@ try:
 except ImportError:
     pass
 
+if config.mode == "gui":
+    try:
+        import PySimpleGUI as sg
+    except ImportError:
+        pass  # This will be caught by hamstall.py, let's not worry about it here.
+
 def get_input(question, options, default, gui_labels=[]):
     """Get User Input.
 
@@ -98,3 +104,17 @@ def pprint(st):
         sg.Popup(st)
     else:
         print(st)
+
+
+def progress(val):
+    """Update Progress of Operation.
+
+    Updates a progress bar (if we have a GUI) as hamstall processes run
+
+    Args:
+        val (int): Value to update the progress bar to.
+
+    """
+    if config.mode == "gui":
+        if config.install_bar is not None:
+            config.install_bar.UpdateBar(val)

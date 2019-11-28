@@ -18,12 +18,12 @@ download_files
 """
 
 
-def nothing(a):
+def nothing_two(a, b=False):
     return None
 
 
 def test_gitinstall(monkeypatch):
-    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    monkeypatch.setattr(prog_manage, "finish_install", nothing_two)
     prog_manage.gitinstall("https://github.com/hammy3502/hamstall.git", "hamstall")
     assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/hamstall/prog_manage.py"))
 
@@ -71,7 +71,7 @@ def test_uninstall():
 
 def test_install(monkeypatch):
     os.chdir(os.path.realpath(__file__)[:-19])
-    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    monkeypatch.setattr(prog_manage, "finish_install", nothing_two)
     prog_manage.install("./fake_packages/package.tar.gz")
     assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/package/test.sh"))
 

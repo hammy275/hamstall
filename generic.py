@@ -28,6 +28,33 @@ if config.mode == "gui":
     except ImportError:
         pass  # This will be caught by hamstall.py, let's not worry about it here.
 
+def ask(question):
+    """Get Any User Input.
+
+    Get user input, with no expected response like with get_input
+
+    Args:
+        question (str): Question to ask user
+
+    Returns:
+        str: User-supplied answer to question
+    
+    """
+    if config.mode == "cli":
+        return input(question)
+    elif config.mode == "gui":
+        layout = [
+            [sg.Text(question)],
+            [sg.InputText(key="answer"), sg.Button("Submit")]
+        ]
+        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        while True:
+            event, values = window.read()
+            if event == "Submit":
+                window.Close()
+                return values["answer"]
+
+
 def get_input(question, options, default, gui_labels=[]):
     """Get User Input.
 

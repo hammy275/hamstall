@@ -35,6 +35,65 @@ except ImportError:
 import config
 import generic
 
+def update_git_program(program):
+    """Update Git Program.
+
+    Args:
+        program (str): Name of program to update
+
+    Returns:
+        str: "No git" if git isn't found, "Error updating" on a generic failure, and "Success" on successful update.
+
+    """
+    if not config.check_bin("git"):
+        return "No git"
+    err = call(["git", "pull"], cwd=config.full("~/.hamstall/bin/{}".format(program)))
+    if err != 0:
+        return "Error updating"
+    else:
+        return "Success"
+
+
+def update_gits():
+    """Update Programs Installed through Git.
+
+    Returns:
+        str/dict: "No git" if git isn't installed, or a dict containing program names and results from update_git_program()
+
+    """
+    if not config.check_bin("git"):
+        return "No git"
+    increment = int(90 / len(config.db["programs"].keys()))
+    progress = 0
+    statuses = {}
+    for p in config.db["programs"].keys():
+        if config.db["programs"][p]["git_installed"]:
+            statuses.update({p: update_git_program(p)})
+        progress += increment
+        generic.progress(progress)
+    return statuses
+
+
+def change_git_branch(program, branch):
+    """Change Git Program's Branch.
+
+    Args:
+        program (str): Program to change the git branch of
+        branch (str): Branch to change to
+
+    Returns:
+        str: "No git", "Error changing", or "Success"
+
+    """
+    if not config.check_bin("git"):
+        return "No git"
+    err = call(["git", "checkout", "-f", branch], cwd=config.full("~/.hamstall/bin/{}".format(program)))
+    if err != 0:
+        return "Error changing"
+    else:
+        return "Success"
+
+
 def change_branch(branch, reset=False):
     """Change Branch.
 
@@ -202,6 +261,15 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
             config.db["options"].update({"Mode": "cli"})
             config.db["version"]["file_version"] = 6
             config.vprint("Upgraded from hamstall file version 5 to 6.")
+        elif file_version == 6:
+            config.vprint("Programs in database need git installed flag!")
+            config.vprint("Auto-detecting based on presence of .git folder!")
+            for p in config.db["programs"].keys():
+                if os.path.isdir(config.full("~/.hamstall/bin/{}/.git".format(p))):
+                    config.db["programs"][p]["git_installed"] = True
+                else:
+                    config.db["programs"][p]["git_installed"] = False
+            config.db["version"]["file_version"] = 7
         try:
             file_version = get_file_version('file')
         except KeyError:
@@ -381,7 +449,7 @@ def rename(program, new_name):
     return new_name
 
 
-def finish_install(program_internal_name):
+def finish_install(program_internal_name, is_git=False):
     """End of Install.
 
     Ran after every program install.
@@ -400,7 +468,7 @@ def finish_install(program_internal_name):
     except FileNotFoundError:
         pass
     config.vprint("Adding program to hamstall list of programs")
-    config.db["programs"].update({program_internal_name: {"desktops": []}})
+    config.db["programs"].update({program_internal_name: {"git_installed": is_git, "desktops": []}})
     config.write_db()
     return "Installed"
 
@@ -460,7 +528,7 @@ Categories={categories}
     return "Created"
 
 
-def gitinstall(git_url, program_internal_name, overwrite=False):
+def gitinstall(git_url, program_internal_name, overwrite=False, reinstall=False):
     """Git Install.
 
     Installs a program from a URL to a Git repository
@@ -471,7 +539,7 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     Returns:
-       str: A string from finish_install(), "No rsync" or "Error"
+       str: A string from finish_install(), "No rsync", "Installed", or "Error"
 
     """
     if not config.check_bin("rsync") and overwrite:
@@ -493,7 +561,10 @@ def gitinstall(git_url, program_internal_name, overwrite=False):
     generic.progress(65)
     if overwrite:
         call(["rsync", "-a", "/tmp/hamstall-temp/{}/".format(program_internal_name), config.full("~/.hamstall/bin/{}".format(program_internal_name))])
-    finish_install(program_internal_name)
+    if not overwrite:
+        return finish_install(program_internal_name, True)
+    else:
+        return "Installed"
 
 
 def add_binlink(file_chosen, program_internal_name):
@@ -710,7 +781,7 @@ def create_command(file_extension, program):
     return command_to_go
 
 
-def install(program, overwrite=False):
+def install(program, overwrite=False, reinstall=False):
     """Install Archive.
 
     Takes an archive and installs it.
@@ -720,7 +791,7 @@ def install(program, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     Returns:
-       str: A string from finish_install() a string from create_command(), "No rsync", "Bad name", or "Error"
+       str: A string from finish_install() a string from create_command(), "No rsync", "Bad name", "Installed", or "Error"
 
     """
     if not config.check_bin("rsync") and overwrite:
@@ -775,10 +846,13 @@ def install(program, overwrite=False):
         rmtree(config.full("/tmp/hamstall-temp"))
     except FileNotFoundError:
         config.vprint('Temp folder not found so not deleted!')
-    return finish_install(program_internal_name)
+    if not reinstall:
+        return finish_install(program_internal_name)
+    else:
+        return "Installed"
 
 
-def dirinstall(program_path, program_internal_name, overwrite=False):
+def dirinstall(program_path, program_internal_name, overwrite=False, reinstall=False):
     """Install Directory.
 
     Installs a directory as a program
@@ -789,7 +863,7 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
         overwrite (bool): Whether or not to assume the program is already installed and to overwite it
 
     Returns:
-       str: A string from finish_install() or "No rsync"
+       str: A string from finish_install(), "Installed", or "No rsync"
 
     """
     generic.progress(10)
@@ -801,7 +875,10 @@ def dirinstall(program_path, program_internal_name, overwrite=False):
         rmtree(program_path)
     else:
         move(program_path, config.full("~/.hamstall/bin/"))
-    return finish_install(program_internal_name)
+    if not reinstall:
+        return finish_install(program_internal_name)
+    else:
+        return "Installed"
 
 
 def uninstall(program):

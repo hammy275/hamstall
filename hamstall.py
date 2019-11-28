@@ -54,6 +54,7 @@ def gui_loop():
         [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
         [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
         [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
+        [sg.Radio("Update programs installed with git", "Todo", enable_events=True, key="should_update_git")],
         [sg.Button("Go"), sg.Button("Exit")],
         [sg.ProgressBar(100, key="bar")]
     ]
@@ -66,22 +67,33 @@ def gui_loop():
             sys.exit(0)
         elif event == "Go":
             if values["should_install"]:
-                parse_args(["--install", values["install"]])
+                status = parse_args(["--install", values["install"]])
             elif values["should_dirinstall"]:
-                parse_args(["--dirinstall", values["dirinstall"]])
+                status = parse_args(["--dirinstall", values["dirinstall"]])
             elif values["should_gitinstall"]:
-                parse_args(["--gitinstall", values["gitinstall"]])
+                status = parse_args(["--gitinstall", values["gitinstall"]])
             elif values["should_remove"]:
-                parse_args(["--remove", values["remove"]])
+                status = parse_args(["--remove", values["remove"]])
             elif values["should_erase"]:
-                parse_args(["--erase"])
+                status = parse_args(["--erase"])
             elif values["should_update"]:
-                parse_args(["--update"])
+                status = parse_args(["--update"])
             elif values["should_manage"]:
-                parse_args(["--manage", values["manage"]])
+                status = parse_args(["--manage", values["manage"]])
             elif values["should_configure"]:
-                parse_args(["--config"])
+                status = parse_args(["--config"])
+            elif values["should_update_git"]:
+                status = parse_args(["--update-gits"])
             config.install_bar.UpdateBar(100)
+            if status == "Locked":
+                generic.pprint("hamstall is locked! You can unlock it, but if another instance of hamstall is running, things will break!")
+                ul = generic.get_input("Would you like to unlock hamstall? Only do this if no other instances of hamstall are running!", ['y', 'n'], 'n',
+                ["Yes", "No"])
+                if ul == 'y':
+                    parse_args(["--remove-lock"])
+                    generic.pprint("hamstall unlocked! Please specify what you would like to do again!")
+                else:
+                    sys.exit(1)
         else:
             for o in to_disable:
                 window.Element(o).Update(disabled=True)
@@ -98,6 +110,42 @@ def gui_loop():
                 window.Element("remove").Update(disabled=False)
             elif event == "should_manage":
                 window.Element("manage").Update(disabled=False)
+
+
+def git_wizard(program):
+    """Extra management for a program installed through git.
+
+    Args:
+        program (str): Name of program to manage
+
+    """
+    msg = """
+Select an option:
+u - Update program from currently configured branch
+b - Reset repository and change branches (WARNING: This will remove everything inside this program's directory!)
+e - Exit Git Wizard.
+[u/b/e]"""
+    ans = generic.get_input(msg, ['u', 'b', 'e'], 'e', ["Update", "Change branch", "Exit"])
+    if ans == 'u':
+        status = prog_manage.update_git_program(program)
+        if status == "Success":
+            generic.pprint("Update successful!")
+        elif status == "No git":
+            generic.pprint("Git isn't installed, please install it!")
+        elif status == "Error updating":
+            generic.pprint("An error occured while attempting to update {}.".format(program))
+    elif ans == 'b':
+        branch = generic.ask("Enter branch to switch to: ")
+        status = prog_manage.change_git_branch(program, branch)
+        if status == "Success":
+            generic.pprint("Branch change successful!")
+        elif status == "No git":
+            generic.pprint("Git isn't installed, please install it!")
+        elif status == "Error changing":
+            generic.pprint("An error occured while attempting to change the branches of {}.".format(program))
+    elif ans == 'e':
+        return
+
 
 
 def branch_wizard():
@@ -314,7 +362,19 @@ def manage(program):
     """
     if not program in config.db["programs"]:
         generic.pprint("{} not installed!".format(program))
-        sys.exit(1)
+        return
+    options = ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e']
+    option_strings = ["Create binlinks", "Add to PATH", "Rename", "Uninstall", "Remove all binlinks and PATHs",
+        "Create a .desktop file", "Remove a .desktop file", "Launch a shell inside the program's directory",
+        "Exit"]
+    if config.db["programs"][program]["git_installed"]:
+        git_msg = "\ng - Manage git-related settings for {program}"
+        g_msg = "g/"
+        options.append("g")
+        option_strings.append("Manage git settings")
+    else:
+        git_msg = ""
+        g_msg = ""
     while True:
         msg = """
 Enter an option to manage program:
@@ -325,13 +385,10 @@ u - Uninstall {program}
 r - Remove all binlinks + PATHs for {program}
 d - Create a .desktop file for {program}
 rd - Remove a .desktop file for {program}
-s - Launch a shell inside {program}'s directory
+s - Launch a shell inside {program}'s directory{git}
 E - Exit program management
-[b/p/n/u/r/d/rd/s/E]""".format(program=program)
-        option = generic.get_input(msg, ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e'], 'e',
-        ["Create binlinks", "Add to PATH", "Rename", "Uninstall", "Remove all binlinks and PATHs",
-        "Create a .desktop file", "Remove a .desktop file", "Launch a shell inside the program's directory",
-        "Exit"])
+[b/p/n/u/r/d/rd/s/{g}E]""".format(program=program, git=git_msg, g=g_msg)
+        option = generic.get_input(msg, options, 'e', option_strings)
         if option == 'b':
             binlink(program)
         elif option == 'p':
@@ -367,6 +424,8 @@ E - Exit program management
                 call(["/bin/zsh"])
             else:
                 call(["/bin/bash"])
+        elif option == 'g':
+            git_wizard(program)
         elif option == 'e':
             break
 
@@ -420,6 +479,7 @@ def parse_args(args=None):
     group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
                                                 "running)", action="store_true")
     group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
+    group.add_argument('-q', '--update-gits', help="Update programs installed through git", action="store_true")
     if args is None:
         args = parser.parse_args()  # Parser stuff
     else:
@@ -430,12 +490,15 @@ def parse_args(args=None):
     fts_status(status)
 
     if status == "Locked":
-        generic.pprint("Another instance of hamstall is probably running! Execution halted!")
-        sys.exit(1)
+        if config.mode == "cli":
+            generic.pprint("Another instance of hamstall is probably running! Execution halted!")
+            sys.exit(1)
+        elif config.mode == "gui":
+            return "Locked"
 
     elif status == "Unlocked":
         generic.pprint("hamstall unlocked!")
-        exit_code = 0
+        sys.exit()
 
     elif status == "Not installed":
         yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',
@@ -472,9 +535,9 @@ def parse_args(args=None):
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                       ["r", "o", "n"], "n", ["Reinstall", "Overwrite", "Cancel"])  # Ask to reinstall
             if reinstall == "r":
-                status = prog_manage.pre_install(args.install, False)
+                status = prog_manage.pre_install(args.install, False, True)
             elif reinstall == "o":
-                status = prog_manage.pre_install(args.install, True)
+                status = prog_manage.pre_install(args.install, True, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         elif status == "Installed":
@@ -503,9 +566,9 @@ def parse_args(args=None):
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
                                             ["r", "o", "n"], "n", ["Reinstall", "Overwrite", "Cancel"])  # Ask to reinstall
             if reinstall == "r":
-                status = prog_manage.pre_gitinstall(args.gitinstall, False)
+                status = prog_manage.pre_gitinstall(args.gitinstall, False, True)
             elif reinstall == "o":
-                status = prog_manage.pre_gitinstall(args.gitinstall, True)
+                status = prog_manage.pre_gitinstall(args.gitinstall, True, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         if status == "Installed":
@@ -527,9 +590,9 @@ def parse_args(args=None):
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n", 
             ["Reinstall", "Overwrite", "Cancel"])
             if reinstall == 'r':
-                status = prog_manage.pre_dirinstall(args.dirinstall, False)
+                status = prog_manage.pre_dirinstall(args.dirinstall, False, True)
             elif reinstall == 'o':
-                status = prog_manage.pre_dirinstall(args.dirinstall, True)
+                status = prog_manage.pre_dirinstall(args.dirinstall, True, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         if status == "Installed":
@@ -597,6 +660,23 @@ def parse_args(args=None):
 
     elif args.config:
         configure()
+    
+    elif args.update_gits:
+        status = prog_manage.update_gits()
+        if status == "No git":
+            generic.pprint("git isn't installed, please install it!")
+            exit_code = 1
+        else:
+            msg = ""
+            exit_code = 0
+            for p in status.keys():
+                if status[p] == "Success":
+                    msg += p + " updated successfully!\n"
+                elif status[p] == "Error updating":
+                    msg += p + " did not update successfully!\n"
+                    exit_code = 1
+            generic.pprint(msg)
+
 
     else:
         generic.pprint("""

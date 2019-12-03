@@ -54,7 +54,7 @@ def gui_loop():
         [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
         [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
         [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
-        [sg.Radio("Update programs installed with git", "Todo", enable_events=True, key="should_update_git")],
+        [sg.Radio("Update programs installed with git and/or programs with upgrade scripts", "Todo", enable_events=True, key="should_update_programs")],
         [sg.Button("Go"), sg.Button("Exit")],
         [sg.ProgressBar(100, key="bar")]
     ]
@@ -82,8 +82,8 @@ def gui_loop():
                 status = parse_args(["--manage", values["manage"]])
             elif values["should_configure"]:
                 status = parse_args(["--config"])
-            elif values["should_update_git"]:
-                status = parse_args(["--update-gits"])
+            elif values["should_update_programs"]:
+                status = parse_args(["--update-programs"])
             if status == "Locked":
                 generic.pprint("hamstall is locked! You can unlock it, but if another instance of hamstall is running, things will break!")
                 ul = generic.get_input("Would you like to unlock hamstall? Only do this if no other instances of hamstall are running!", ['y', 'n'], 'n',
@@ -364,18 +364,31 @@ def manage(program):
     if not program in config.db["programs"]:
         generic.pprint("{} not installed!".format(program))
         return
-    options = ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'e']
+    options = ['b', 'p', 'n', 'u', 'r', 'd', 'rd', 's', 'us', 'e']
     option_strings = ["Create binlinks", "Add to PATH", "Rename", "Uninstall", "Remove all binlinks and PATHs",
         "Create a .desktop file", "Remove a .desktop file", "Launch a shell inside the program's directory",
-        "Exit"]
+        "Add upgrade script", "Exit"]
+    q_msg = ""
+    q = ""
     if config.db["programs"][program]["git_installed"]:
         git_msg = "\ng - Manage git-related settings for {program}"
         g_msg = "g/"
-        options.append("g")
+        options.append('g')
         option_strings.append("Manage git settings")
+        us = "post-upgrade"
+        q_msg = "\nq - Upgrade {program}".format(program=program)
+        q = "q/"
+        options.append('q')
+        option_strings.append("Upgrade program")
     else:
         git_msg = ""
         g_msg = ""
+        us = "upgrade"
+    if q == "" and config.db["programs"][program]["post_upgrade_script"] is not None:
+        q_msg = "\nq - Upgrade {program}".format(program=program)
+        q = "q/"
+        options.append('q')
+        option_strings.append("Upgrade program")
     while True:
         msg = """
 Enter an option to manage program:
@@ -387,8 +400,10 @@ r - Remove all binlinks + PATHs for {program}
 d - Create a .desktop file for {program}
 rd - Remove a .desktop file for {program}
 s - Launch a shell inside {program}'s directory{git}
+us - Add {us} script to program{q_msg}
 E - Exit program management
-[b/p/n/u/r/d/rd/s/{g}E]""".format(program=program, git=git_msg, g=g_msg)
+[b/p/n/u/r/d/rd/s/{g}/us/{q}E]""".format(program=program, git=git_msg, g=g_msg, us=us,
+        q_msg=q_msg, q=q)
         option = generic.get_input(msg, options, 'e', option_strings)
         if option == 'b':
             binlink(program)
@@ -427,6 +442,31 @@ E - Exit program management
                 call(["/bin/bash"])
         elif option == 'g':
             git_wizard(program)
+        elif option == 'q' and q != "":
+            status = prog_manage.update_program(program)
+            if status == "Success":
+                generic.pprint("Program upgrading successful!")
+            elif status == "No git":
+                generic.pprint("Git not installed, please install it!")
+            elif status == "Error updating":
+                generic.pprint("Error while upgrading through git!")
+            elif status == "No script":
+                generic.pprint("Upgrade script no longer exists! The update script reference has been removed!")
+            elif status == "Script error":
+                generic.pprint("Error while executing the supplied upgrade script!")
+            elif status == "OSError":
+                generic.pprint("Shell not specified! Please specify one at the top of the supplied script (ie. #!/bin/sh)")
+        elif option == 'us':
+            msg = """
+Please input the script you would like to run to upgrade an installed program.
+Note: The script will be run inside your program's directory.
+Warning: The shell must be specified at the top of the file (ie. "#!/bin/sh)
+"""
+            status = prog_manage.update_script(program, generic.ask_file(""))
+            if status == "Success":
+                generic.pprint("Update script added successfully!")
+            elif status == "Bad path":
+                generic.pprint("Script specified does not exist!")
         elif option == 'e':
             break
 
@@ -480,7 +520,7 @@ def parse_args(args=None):
     group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
                                                 "running)", action="store_true")
     group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
-    group.add_argument('-q', '--update-gits', help="Update programs installed through git", action="store_true")
+    group.add_argument('-q', '--update-programs', help="Update programs installed through git and ones with upgrade scripts", action="store_true")
     if args is None:
         args = parser.parse_args()  # Parser stuff
     else:
@@ -662,8 +702,8 @@ def parse_args(args=None):
     elif args.config:
         configure()
     
-    elif args.update_gits:
-        status = prog_manage.update_gits()
+    elif args.update_programs:
+        status = prog_manage.update_programs()
         if status == "No git":
             generic.pprint("git isn't installed, please install it!")
             exit_code = 1
@@ -673,7 +713,7 @@ def parse_args(args=None):
             for p in status.keys():
                 if status[p] == "Success":
                     msg += p + " updated successfully!\n"
-                elif status[p] == "Error updating":
+                else:
                     msg += p + " did not update successfully!\n"
                     exit_code = 1
             generic.pprint(msg)

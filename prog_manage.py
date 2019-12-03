@@ -35,6 +35,61 @@ except ImportError:
 import config
 import generic
 
+def update_program(program):
+    """Update Program.
+
+    Args:
+        program (str): Name of program to update
+
+    Returns:
+        str: "No script" if script doesn't exist, "Script error" if script
+        failed to execute, or "Success" on a success. Can also be something
+        from update_git_program if the program supplied is a
+        git installed program. Can also return "OSError" if the supplied
+        script doesn't specify the shell to be used.
+
+    """
+    if config.db["programs"][program]["git_installed"]:
+        status = update_git_program(program)
+        if status != "Success":
+            return status
+    if config.db["programs"][program]["post_upgrade_script"] is not None:
+        if not config.db["programs"][program]["post_upgrade_script"]:
+            config.db["programs"][program]["post_upgrade_script"] = None
+            config.write_db()
+            return "No script"
+        else:
+            try:
+                err = call(config.db["programs"][program]["post_upgrade_script"], 
+                cwd=config.full("~/.hamstall/bin/{}".format(program)))
+                if err != 0:
+                    return "Script error"
+                else:
+                    return "Success"
+            except OSError:
+                return "OSError"
+
+
+def update_script(program, script_path):
+    """Set Update Script.
+
+    Set a script to run when a program is updated.
+
+    Args:
+        program (str): Program to set an update script for
+        script_path (str): Path to script to run as an/after update.
+
+    Returns:
+        str: "Bad path" if the path doesn't exist, "Success" otherwise.
+
+    """
+    if not config.exists(config.full(script_path)):
+        return "Bad path"
+    config.db["programs"][program]["post_upgrade_script"] = config.full(script_path)
+    config.write_db()
+    return "Success"
+
+
 def update_git_program(program):
     """Update Git Program.
 
@@ -54,8 +109,8 @@ def update_git_program(program):
         return "Success"
 
 
-def update_gits():
-    """Update Programs Installed through Git.
+def update_programs():
+    """Update Programs Installed through Git or Ones with Upgrade Scripts.
 
     Returns:
         str/dict: "No git" if git isn't installed, or a dict containing program names and results from update_git_program()
@@ -67,8 +122,8 @@ def update_gits():
     progress = 0
     statuses = {}
     for p in config.db["programs"].keys():
-        if config.db["programs"][p]["git_installed"]:
-            statuses.update({p: update_git_program(p)})
+        if config.db["programs"][p]["git_installed"] or config.db["programs"][p]["post_upgrade_script"] is not None:
+            statuses.update({p: update_program(p)})
         progress += increment
         generic.progress(progress)
     return statuses
@@ -270,6 +325,11 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
                 else:
                     config.db["programs"][p]["git_installed"] = False
             config.db["version"]["file_version"] = 7
+        elif file_version == 7:
+            config.vprint("Programs in database need post_upgrade_script entry!")
+            for p in config.db["programs"].keys():
+                config.db["programs"][p]["post_upgrade_script"] = None
+            config.db["version"]["file_version"] = 8
         try:
             file_version = get_file_version('file')
         except KeyError:

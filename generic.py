@@ -55,6 +55,37 @@ def ask(question):
                 return values["answer"]
 
 
+def ask_file(question):
+    """Get User Input for File.
+
+    Get user input for a file
+
+    Args:
+        question (str): Question to ask user
+
+    Returns:
+        str: Path to file
+    
+    """
+    if config.mode == "cli":
+        f = "/"
+        while not config.exists(f):
+            f = input(question)
+        return f
+    elif config.mode == "gui":
+        layout = [
+            [sg.Text(question)],
+            [sg.InputText(key="answer"), sg.FileBrowse()],
+            [sg.Button("Submit")]
+        ]
+        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        while True:
+            event, values = window.read()
+            if event == "Submit":
+                window.Close()
+                return values["answer"]
+
+
 def get_input(question, options, default, gui_labels=[]):
     """Get User Input.
 

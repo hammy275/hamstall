@@ -23,8 +23,8 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 44
-file_version = 7
+prog_internal_version = 45
+file_version = 8
 
 #############
 
@@ -440,7 +440,8 @@ Database structure
     }
     "programs" : {
         "package" : {
-            "git_installed": False
+            "git_installed": False,
+            "post_upgrade_script": None,
             "desktops" : [
                 "desktop_file_name"
             ]

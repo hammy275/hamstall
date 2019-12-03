@@ -655,9 +655,11 @@ def update():
     Checks to see if we should update hamstall, then does so if one is available
 
     Returns:
-        str: "No requests" if requests isn't installed, "Newer version" if the installed
+        str: "No requests" if requests isn't installed, "No internet if there isn't
+        an internet connection, "Newer version" if the installed
         version is newer than the one online, "No update" if there is no update,
-        "Updated" upon a successful update, and "Failed" if file downloading failed.
+        "Updated" upon a successful update, or "Failed" if requests isn't installed.
+
     """
     if not can_update:
         config.vprint("requests isn't installed.")
@@ -668,6 +670,8 @@ def update():
     final_version = get_online_version('prog')
     if final_version == -1:
         return "No requests"
+    elif final_version == -2:
+        return "No internet"
     config.vprint('Installed internal version: ' + str(prog_version_internal))
     config.vprint('Version on GitHub: ' + str(final_version))
     generic.progress(10)
@@ -685,6 +689,8 @@ def update():
         status = download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
         if status == "Fail":
             return "Failed"
+        elif status == "No internet":
+            return "No internet"
         generic.progress(75)
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
@@ -992,13 +998,16 @@ def get_online_version(type_of_replacement, branch=config.branch):
         branch (str): Branch to check version of (default: User's current branch)
     
     Returns:
-        int: The specified version or -1 if it couldn't be retrieved
+        int: The specified version, -1 if requests is missing, or -2 if not connected to the internet.
     """
     if not can_update:
         print("requests library not installed! Exiting...")
         return -1
     version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
-    version_raw = requests.get(version_url)
+    try:
+        version_raw = requests.get(version_url)
+    except requests.ConnectionError:
+        return -2
     version = version_raw.text
     spot = version.find(".")
     if type_of_replacement == 'file':
@@ -1032,13 +1041,19 @@ def download_files(files, folder):
         files (str[]): List of files to obtain from hamstall repo
         folder (str): Folder to put files in
 
+    Returns:
+        str: "Fail" if requests library isn't installed or "No internet"
+
     """
     if not can_update:
         print("Cannot download files if the request library isn't installed!")
         return "Fail"
     for i in files:
-        r = requests.get(
+        try:
+            r = requests.get(
             "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(config.db["version"]["branch"]) + i)
+        except requests.ConnectionError:
+            return "No internet"
         open(config.full(folder + i), 'wb').write(r.content)
 
 

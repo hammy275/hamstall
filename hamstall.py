@@ -686,6 +686,7 @@ def parse_args(args=None):
         status = prog_manage.update()
         if status == "No requests":
             generic.pprint("requests isn't installed, please install it!")
+            exit_code = 1
         elif status == "Newer version":
             generic.pprint("The installed version is newer than the one found online!")
         elif status == "No update":
@@ -695,8 +696,8 @@ def parse_args(args=None):
         elif status == "Failed":
             generic.pprint("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
             exit_code = 1
-        elif status == "No requests":
-            generic.pprint("requests isn't installed, please install it before updating!")
+        elif status == "No internet":
+            generic.pprint("Failed to connect to the internet!")
             exit_code = 1
 
     elif args.config:

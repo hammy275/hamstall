@@ -84,7 +84,6 @@ def gui_loop():
                 status = parse_args(["--config"])
             elif values["should_update_git"]:
                 status = parse_args(["--update-gits"])
-            config.install_bar.UpdateBar(100)
             if status == "Locked":
                 generic.pprint("hamstall is locked! You can unlock it, but if another instance of hamstall is running, things will break!")
                 ul = generic.get_input("Would you like to unlock hamstall? Only do this if no other instances of hamstall are running!", ['y', 'n'], 'n',
@@ -94,6 +93,8 @@ def gui_loop():
                     generic.pprint("hamstall unlocked! Please specify what you would like to do again!")
                 else:
                     sys.exit(1)
+            else:
+                config.install_bar.UpdateBar(100)
         else:
             for o in to_disable:
                 window.Element(o).Update(disabled=True)

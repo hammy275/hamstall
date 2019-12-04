@@ -179,8 +179,7 @@ E - Exit branch wizard and don't change branches.
         generic.pprint("Already on the beta branch, not switching!")
         return
     else:
-        check = generic.get_input('Type "YES" (without the quotes) to confirm the branch switch! ',
-        ["YES", "NO"], "NO")
+        check = generic.ask('Type "YES" (without the quotes) to confirm the branch switch! ')
         if check != "YES":
             generic.pprint("Cancelling branch switch.")
             return

@@ -114,8 +114,11 @@ def update_programs():
 
     Returns:
         str/dict: "No git" if git isn't installed, or a dict containing program names and results from update_git_program()
+        It can also return "No programs" if no programs are installed.
 
     """
+    if len(config.db["programs"].keys()) == 0:
+        return "No programs"
     if not config.check_bin("git"):
         return "No git"
     increment = int(90 / len(config.db["programs"].keys()))

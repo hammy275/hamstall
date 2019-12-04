@@ -23,7 +23,7 @@ import shutil
 ###VERSIONS###
 
 version = "1.3.0 beta"
-prog_internal_version = 46
+prog_internal_version = 47
 file_version = 8
 
 #############
@@ -130,7 +130,13 @@ def vprint(to_print):
     """Print a message only if we're verbose"""
     global verbose
     if verbose:
-        print(to_print)
+        if mode == "cli":
+            print(to_print)
+        elif mode == "gui":
+            try:
+                output_area.Update(to_print)
+            except AttributeError:
+                pass  # GUI hasn't loaded yet
 
 
 def get_version(version_type):
@@ -474,7 +480,8 @@ db = get_db()
 verbose = vcheck()
 mode = read_config("Mode")
 
-install_bar = None
+install_bar = None  # Holds a progress bar if we're in a GUI
+output_area = None  # Holds a text area if we're in a GUI (for displaying status messages)
 
 if db != {}:
     vprint("Database loaded successfully!")

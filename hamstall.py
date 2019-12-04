@@ -56,12 +56,14 @@ def gui_loop():
         [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
         [sg.Radio("Update programs installed with git and/or programs with upgrade scripts", "Todo", enable_events=True, key="should_update_programs")],
         [sg.Button("Go"), sg.Button("Exit")],
-        [sg.ProgressBar(100, key="bar")]
+        [sg.ProgressBar(100, key="bar")],
+        [sg.Text(" "*100, key="status_area")]
     ]
     window = sg.Window('hamstall', layout=layout)
     while True:
         event, values = window.Read()
         config.install_bar = window.Element("bar")
+        config.output_area = window.Element("status_area")
         config.install_bar.UpdateBar(0)
         if event in (None, "Exit"):
             sys.exit(0)
@@ -236,10 +238,10 @@ e - Exit hamstall
         elif option == 'm':
             if config.read_config("Mode") == "cli":
                 config.change_config("Mode", "change", "gui")
-                generic.pprint("Changed to GUI mode!")
+                generic.pprint("Changed to GUI mode! Please restart hamstall.")
             else:
                 config.change_config("Mode", "change", "cli")
-                generic.pprint("Changed to CLI mode!")
+                generic.pprint("Changed to CLI mode! Please restart hamstall.")
             key = None
         elif option == 'e':
             return
@@ -531,10 +533,10 @@ def parse_args(args=None):
     fts_status(status)
 
     if status == "Locked":
-        if config.mode == "cli":
+        if mode == "cli":
             generic.pprint("Another instance of hamstall is probably running! Execution halted!")
             sys.exit(1)
-        elif config.mode == "gui":
+        elif mode == "gui":
             return "Locked"
 
     elif status == "Unlocked":
@@ -707,6 +709,9 @@ def parse_args(args=None):
         status = prog_manage.update_programs()
         if status == "No git":
             generic.pprint("git isn't installed, please install it!")
+            exit_code = 1
+        elif status == "No programs":
+            generic.pprint("You have no programs installed!")
             exit_code = 1
         else:
             msg = ""

@@ -160,7 +160,7 @@ def endi(state):
 def pprint(st):
     if config.mode == "gui":
         sg.Popup(st)
-    else:
+    elif config.mode == "cli":
         print(st)
 
 

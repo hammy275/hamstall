@@ -531,7 +531,8 @@ def finish_install(program_internal_name, is_git=False):
     except FileNotFoundError:
         pass
     config.vprint("Adding program to hamstall list of programs")
-    config.db["programs"].update({program_internal_name: {"git_installed": is_git, "desktops": []}})
+    config.db["programs"].update({program_internal_name: {"git_installed": is_git, "desktops": [], 
+    "post_upgrade_script": None}})
     config.write_db()
     return "Installed"
 

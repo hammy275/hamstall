@@ -435,12 +435,15 @@ E - Exit program management
                 inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
             prog_manage.remove_desktop(program, inp)
         elif option == 's':
-            generic.pprint("When you exit the shell, you will be returned to here.")
-            os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
-            if config.get_shell_file() == ".zshrc":
-                call(["/bin/zsh"])
+            if mode == "gui":
+                generic.pprint("This feature can only be used from the command line version of hamstall!")
             else:
-                call(["/bin/bash"])
+                generic.pprint("When you exit the shell, you will be returned to here.")
+                os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
+                if config.get_shell_file() == ".zshrc":
+                    call(["/bin/zsh"])
+                else:
+                    call(["/bin/bash"])
         elif option == 'g':
             git_wizard(program)
         elif option == 'q' and q != "":
@@ -733,6 +736,10 @@ hamstall Version: {user_version}
 Internal Version Code: {file_version}.{prog_version}
 
 For help, type "hamstall -h"
+
+For additional help, the hamstall wiki is linked below.
+
+https://github.com/hammy3502/hamstall/wiki
         """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"),
                 prog_version=config.get_version("prog_internal_version")))
 

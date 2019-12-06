@@ -209,7 +209,7 @@ def change_branch(branch, reset=False):
                 i_num = len(i) - 3
                 if i[i_num:len(i)] == '.py':
                     copyfile(i, config.full('~/.hamstall/' + i))
-            generic.progress(80)
+            generic.progress(75)
             config.vprint("Removing old database and programs.")
             try:
                 os.remove(config.full("~/.hamstall/database"))
@@ -220,11 +220,11 @@ def change_branch(branch, reset=False):
             except FileNotFoundError:
                 pass
             os.mkdir(config.full("~/.hamstall/bin"))
-            generic.progress(90)
+            generic.progress(85)
             print("Please run hamstall again to re-create the database!")
             config.db = {"refresh": True}
             config.write_db()
-            generic.progress(95)
+            generic.progress(90)
             config.unlock()
             return "Reset"
         else:

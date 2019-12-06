@@ -54,7 +54,7 @@ def gui_loop():
         [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
         [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
         [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
-        [sg.Radio("Update programs installed with git and/or programs with upgrade scripts", "Todo", enable_events=True, key="should_update_programs")],
+        [sg.Radio("Upgrade all programs that can be upgraded", "Todo", enable_events=True, key="should_update_programs")],
         [sg.Button("Go"), sg.Button("Exit")],
         [sg.ProgressBar(100, key="bar")],
         [sg.Text(" "*100, key="status_area")]
@@ -126,8 +126,7 @@ def git_wizard(program):
 Select an option:
 u - Update program from currently configured branch
 b - Reset repository and change branches (WARNING: This will remove everything inside this program's directory!)
-e - Exit Git Wizard.
-[u/b/e]"""
+e - Exit Git Wizard."""
     ans = generic.get_input(msg, ['u', 'b', 'e'], 'e', ["Update", "Change branch", "Exit"])
     if ans == 'u':
         status = prog_manage.update_git_program(program)
@@ -166,8 +165,7 @@ Switching branches will trigger an immediate update of hamstall!
 Select a branch:
 m - Master branch. Less bugs, more stable, wait for updates.
 b - Beta branch. More bugs, less stable, updates asap.
-E - Exit branch wizard and don't change branches.
-[m/b/E]"""
+E - Exit branch wizard and don't change branches."""
     ans = generic.get_input(msg, ['m', 'b', 'e'], 'e', ["Master", "Beta", "Exit"])
     if ans == 'e':
         generic.pprint("Not changing branches!")
@@ -217,8 +215,7 @@ au - Enable/disable the ability to install updates when hamstall is run. Current
 v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
 b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
 m - Whether or not to use the GUI for hamstall. Currently {gui}.
-e - Exit hamstall
-[au/v/b/m/E]""".format(
+e - Exit hamstall""".format(
             au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
             b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui")
         )
@@ -278,7 +275,7 @@ def binlink(program):
             if file_chosen == "exit":
                 return
         prog_manage.add_binlink(file_chosen, program)
-        yn = generic.get_input('Would you like to continue adding files to be run directly? [y/N]', ['y', 'n'], 'n')
+        yn = generic.get_input('Would you like to continue adding files to be run directly?', ['y', 'n'], 'n')
 
 
 def desktop_wizard(program):
@@ -301,7 +298,7 @@ def desktop_wizard(program):
     icon = ";"
     while not icon.replace("-", "").replace("_", "").replace("/", "").isalnum() and icon != "":
         icon = input("Enter the path to an icon, the name of the icon, or press ENTER for no icon! ")
-    terminal = generic.get_input("Should this program launch a terminal to run it in? [y/N]", ['y', 'n'], 'n')
+    terminal = generic.get_input("Should this program launch a terminal to run it in?", ['y', 'n'], 'n')
     if terminal.lower() == 'y':
         should_terminal = "True"
     else:
@@ -343,13 +340,13 @@ def install_wrap_up(program):
         program (str): Name of program
 
     """
-    yn = generic.get_input('Would you like to add the program to your PATH? [Y/n]', ['y', 'n'], 'y', ["Yes", "No"])
+    yn = generic.get_input('Would you like to add the program to your PATH?', ['y', 'n'], 'y', ["Yes", "No"])
     if yn == 'y':
         pathify(program)
-    yn = generic.get_input('Would you like to create a binlink? [y/N]', ['y', 'n'], 'n', ["Yes", "No"])
+    yn = generic.get_input('Would you like to create a binlink?', ['y', 'n'], 'n', ["Yes", "No"])
     if yn == 'y':
         binlink(program)
-    yn = generic.get_input('Would you like to create a desktop file? [y/N]', ['y', 'n'], 'n', ["Yes", "No"])
+    yn = generic.get_input('Would you like to create a desktop file?', ['y', 'n'], 'n', ["Yes", "No"])
     if yn == 'y':
         desktop_wizard(program)
     generic.pprint("Installation complete!")
@@ -376,7 +373,7 @@ def manage(program):
         g_msg = "g/"
         options.append('g')
         option_strings.append("Manage git settings")
-        us = "post-upgrade"
+        us = "a post-upgrade"
         q_msg = "\nq - Upgrade {program}".format(program=program)
         q = "q/"
         options.append('q')
@@ -384,7 +381,7 @@ def manage(program):
     else:
         git_msg = ""
         g_msg = ""
-        us = "upgrade"
+        us = "an upgrade"
     if q == "" and config.db["programs"][program]["post_upgrade_script"] is not None:
         q_msg = "\nq - Upgrade {program}".format(program=program)
         q = "q/"
@@ -402,9 +399,8 @@ d - Create a .desktop file for {program}
 rd - Remove a .desktop file for {program}
 s - Launch a shell inside {program}'s directory{git}
 us - Add {us} script to program{q_msg}
-E - Exit program management
-[b/p/n/u/r/d/rd/s/{g}/us/{q}E]""".format(program=program, git=git_msg, g=g_msg, us=us,
-        q_msg=q_msg, q=q)
+E - Exit program management""".format(program=program, git=git_msg, g=g_msg, us=us,
+        q_msg=q_msg)
         option = generic.get_input(msg, options, 'e', option_strings)
         if option == 'b':
             binlink(program)
@@ -466,7 +462,7 @@ Please input the script you would like to run to upgrade an installed program.
 Note: The script will be run inside your program's directory.
 Warning: The shell must be specified at the top of the file (ie. "#!/bin/sh)
 """
-            status = prog_manage.update_script(program, generic.ask_file(""))
+            status = prog_manage.update_script(program, generic.ask_file("Please enter the path to the script: "))
             if status == "Success":
                 generic.pprint("Update script added successfully!")
             elif status == "Bad path":
@@ -546,7 +542,7 @@ def parse_args(args=None):
         sys.exit()
 
     elif status == "Not installed":
-        yn = generic.get_input('hamstall is not installed on your system. Would you like to install it? [Y/n]',
+        yn = generic.get_input('hamstall is not installed on your system. Would you like to install it?',
                                 ['y', 'n', 'debug'], 'y')
         if yn == 'y':
             prog_manage.first_time_setup(False)
@@ -577,12 +573,12 @@ def parse_args(args=None):
             generic.pprint("The specified file does not exist!")
             exit_code = 1
         elif status == "Application exists":
-            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
+            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite?",
                                       ["r", "o", "n"], "n", ["Reinstall", "Overwrite", "Cancel"])  # Ask to reinstall
             if reinstall == "r":
-                status = prog_manage.pre_install(args.install, False, True)
+                status = prog_manage.pre_install(args.install, False)
             elif reinstall == "o":
-                status = prog_manage.pre_install(args.install, True, True)
+                status = prog_manage.pre_install(args.install, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         elif status == "Installed":
@@ -608,7 +604,7 @@ def parse_args(args=None):
             generic.pprint("Invalid URL supplied; make sure it ends in .git!")
             exit_code = 1
         elif status == "Application exists":
-            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]",
+            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite?",
                                             ["r", "o", "n"], "n", ["Reinstall", "Overwrite", "Cancel"])  # Ask to reinstall
             if reinstall == "r":
                 status = prog_manage.pre_gitinstall(args.gitinstall, False, True)
@@ -632,7 +628,7 @@ def parse_args(args=None):
             generic.pprint("Please specify a valid directory path that ends in a \"/\"!")
             exit_code = 1
         elif status == "Application exists":
-            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite? [r/o/N]", ["r", "o", "n"], "n", 
+            reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite?", ["r", "o", "n"], "n", 
             ["Reinstall", "Overwrite", "Cancel"])
             if reinstall == 'r':
                 status = prog_manage.pre_dirinstall(args.dirinstall, False, True)
@@ -665,11 +661,11 @@ def parse_args(args=None):
                 generic.pprint(p)
 
     elif args.erase:
-        erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system? [y/N]",
+        erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system?",
                                     ['y', 'n'], 'n', ["Yes", "No"])
         if erase_sure == 'y':
             erase_really_sure = generic.get_input('Are you absolutely sure?' +
-                                                'This will remove all programs installed with hamstall! [y/N]',
+                                                'This will remove all programs installed with hamstall!',
                                                 ['y', 'n'], 'n', ["Yes", "No"])
             if erase_really_sure == 'y':
                 status = prog_manage.erase()
@@ -677,6 +673,7 @@ def parse_args(args=None):
                     generic.pprint("hamstall isn't installed, so not removed!")
                 elif status == "Erased":
                     generic.pprint("hamstall has been removed!")
+                    sys.exit(0)
             else:
                 generic.pprint('Erase cancelled.')
         else:

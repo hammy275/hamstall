@@ -353,7 +353,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     return "Good"
 
 
-def pre_install(program, overwrite=None):
+def pre_install(program, overwrite=None, reinstall=False):
     """Pre-Archive Install.
 
     Preparation before installing an archive.
@@ -375,9 +375,9 @@ def pre_install(program, overwrite=None):
         else:
             if not overwrite:
                 uninstall(program_internal_name)
-                return install(program)  # Reinstall
+                return install(program, False, True)  # Reinstall
             elif overwrite:
-                return install(program, True)
+                return install(program, True, True)
     else:
         return install(program)  # No reinstall needed to be asked, install program
     config.write_db()
@@ -406,9 +406,9 @@ def pre_gitinstall(program, overwrite=None):
             else:
                 if not overwrite:
                     uninstall(program_internal_name)
-                    return gitinstall(program, program_internal_name)
+                    return gitinstall(program, program_internal_name, False, True)
                 elif overwrite:
-                    return gitinstall(program, program_internal_name, True)
+                    return gitinstall(program, program_internal_name, True, True)
         else:
             return gitinstall(program, program_internal_name)
     config.write_db()
@@ -423,9 +423,9 @@ def pre_dirinstall(program, overwrite=None):
             return "Application exists"
         elif not overwrite:
             uninstall(program_internal_name)
-            return dirinstall(program, program_internal_name)
+            return dirinstall(program, program_internal_name, False, True)
         elif overwrite:
-            return dirinstall(program, program_internal_name, True)
+            return dirinstall(program, program_internal_name, True, True)
     else:
         return dirinstall(program, program_internal_name)
     config.write_db()

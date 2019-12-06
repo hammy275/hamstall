@@ -102,6 +102,12 @@ def get_input(question, options, default, gui_labels=[]):
 
     """
     if config.mode == "cli":
+        options_form = list(options)  # Otherwise, Python would "link" options_form with options
+        options_form[options_form.index(default)] = options_form[options_form.index(default)].upper()
+        if len(options) > 3:
+            question += "\n[" + "/".join(options_form) + "]"
+        else:
+            question += " [" + "/".join(options_form) + "]"
         answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
         while answer not in options and answer != "":
             answer = input(question)

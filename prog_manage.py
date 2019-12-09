@@ -508,7 +508,7 @@ def rename(program, new_name):
     config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
     move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
     config.write_db()
-    generic.progress(100)
+    generic.progress(90)
     return new_name
 
 

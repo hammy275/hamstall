@@ -543,12 +543,9 @@ def parse_args(args=None):
 
     elif status == "Not installed":
         yn = generic.get_input('hamstall is not installed on your system. Would you like to install it?',
-                                ['y', 'n', 'debug'], 'y')
+                                ['y', 'n'], 'y')
         if yn == 'y':
-            prog_manage.first_time_setup(False)
-            exit_code = fts_status(status)
-        elif yn == 'debug':
-            prog_manage.first_time_setup(True)
+            prog_manage.first_time_setup()
             exit_code = fts_status(status)
         else:
             generic.pprint('hamstall not installed.')

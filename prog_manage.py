@@ -271,7 +271,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
         print("We're done! Continuing hamstall execution...")
 
     if start_fts:  # Check if -f or --first is supplied
-        return first_time_setup(False)
+        return first_time_setup()
 
     if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
         return "Not installed"
@@ -739,17 +739,14 @@ def erase():
     return "Erased"
 
 
-def first_time_setup(sym):
+def first_time_setup():
     """First Time Setup.
 
     Sets up hamstall for the first time.
 
-    Args:
-        sym (bool): Used for testing. If True, installed py's will be symlinked to originals, not copied.
-        False means it will be copied and not symlinked.
-
     Returns:
         str: "Already installed" if already installed, "Success" on installation success.
+
     """
     if config.exists(config.full('~/.hamstall/hamstall.py')):
         return "Already installed"
@@ -772,13 +769,10 @@ def first_time_setup(sym):
     for i in files:
         i_num = len(i) - 3
         if i[i_num:len(i)] == '.py':
-            if sym:
-                os.symlink(os.getcwd() + "/" + i, config.full("~/.hamstall/" + i))
-            else:
-                try:
-                    copyfile(i, config.full('~/.hamstall/' + i))
-                except FileNotFoundError:
-                    return "Bad copy"
+            try:
+                copyfile(i, config.full('~/.hamstall/' + i))
+            except FileNotFoundError:
+                return "Bad copy"
     config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
     config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
     config.unlock()

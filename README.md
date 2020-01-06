@@ -1,4 +1,8 @@
 # hamstall
+
+![hamstall Terminal Interface](readme-images/terminal.png)
+![hamstall GUI Interface](readme-images/gui.png)
+
 hamstall is a lightweight package manager for Linux (and similar) systems that manages programs stored in archives, programs stored as directories, and remote git repositories! It's built off of Python 3 and currently manages .zip, .7z, .rar, .tar.gz, and .tar.xz archives, directories, and git repositories! It has an array of features besides the typical installing/uninstalling including path management, .desktop creation, alias creation (binlinks), and program updating through git and user-provided upgrade scripts!
 
 ## Notable Features

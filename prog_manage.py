@@ -690,7 +690,7 @@ def update():
                 os.remove(config.full('~/.hamstall/' + i))
         generic.progress(40)
         config.vprint("Downloading new hamstall pys..")
-        status = download_files(['hamstall.py', 'generic.py', 'config.py', 'config.py', 'py'], '~/.hamstall/')
+        status = download_files(['hamstall.py', 'generic.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
         if status == "Fail":
             return "Failed"
         elif status == "No internet":

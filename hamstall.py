@@ -604,9 +604,9 @@ def parse_args(args=None):
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite?",
                                             ["r", "o", "n"], "n", ["Reinstall", "Overwrite", "Cancel"])  # Ask to reinstall
             if reinstall == "r":
-                status = prog_manage.pre_gitinstall(args.gitinstall, False, True)
+                status = prog_manage.pre_gitinstall(args.gitinstall, False)
             elif reinstall == "o":
-                status = prog_manage.pre_gitinstall(args.gitinstall, True, True)
+                status = prog_manage.pre_gitinstall(args.gitinstall, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         if status == "Installed":
@@ -628,9 +628,9 @@ def parse_args(args=None):
             reinstall = generic.get_input("Application already exists! Would you like to reinstall/overwrite?", ["r", "o", "n"], "n", 
             ["Reinstall", "Overwrite", "Cancel"])
             if reinstall == 'r':
-                status = prog_manage.pre_dirinstall(args.dirinstall, False, True)
+                status = prog_manage.pre_dirinstall(args.dirinstall, False)
             elif reinstall == 'o':
-                status = prog_manage.pre_dirinstall(args.dirinstall, True, True)
+                status = prog_manage.pre_dirinstall(args.dirinstall, True)
             else:
                 generic.pprint("Reinstall cancelled.")
         if status == "Installed":

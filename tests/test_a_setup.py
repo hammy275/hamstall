@@ -10,7 +10,7 @@ from io import StringIO
 def test_reset(monkeypatch):
     assert prog_manage.erase() == "Erased" or prog_manage.erase() == "Not installed"
 
-    prog_manage.first_time_setup(True)
+    prog_manage.first_time_setup()
 
     monkeypatch.setattr('sys.stdin', StringIO("n\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\nn\n"))
     prog_manage.install("./tests/fake_packages/package.tar.gz")

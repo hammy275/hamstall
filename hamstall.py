@@ -317,7 +317,7 @@ def desktop_wizard(program):
         generic.pprint("Please enter categories, one at a time, from the list of .desktop categories below (defaults to "
                 "Utility). Type \"end\" to end category selection. \n")
         generic.pprint(", ".join(categories))
-        ans = generic.get_input("", categories, "Utility")
+        ans = generic.get_input("", categories, "utility")
         if ans.capitalize() in chosen_categories or ans == "end":
             pass
         else:
@@ -429,7 +429,8 @@ E - Exit program management""".format(program=program, git=git_msg, g=g_msg, us=
             inp = "/ choose desktop"
             while not (inp in config.db["programs"][program]["desktops"]) and inp != "exit":
                 inp = input("Please enter the desktop you would like to remove or type \"exit\" to exit: ")
-            prog_manage.remove_desktop(program, inp)
+            if inp != "exit":
+                prog_manage.remove_desktop(program, inp)
         elif option == 's':
             if mode == "gui":
                 generic.pprint("This feature can only be used from the command line version of hamstall!")

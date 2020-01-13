@@ -17,8 +17,76 @@
 import sys
 import config
 
+try:
+    import PySimpleGUI as sg
+except ImportError:
+    pass
 
-def get_input(question, options, default):
+if config.mode == "gui":
+    try:
+        import PySimpleGUI as sg
+    except ImportError:
+        pass  # This will be caught by hamstall.py, let's not worry about it here.
+
+def ask(question):
+    """Get Any User Input.
+
+    Get user input, with no expected response like with get_input
+
+    Args:
+        question (str): Question to ask user
+
+    Returns:
+        str: User-supplied answer to question
+    
+    """
+    if config.mode == "cli":
+        return input(question)
+    elif config.mode == "gui":
+        layout = [
+            [sg.Text(question)],
+            [sg.InputText(key="answer"), sg.Button("Submit")]
+        ]
+        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        while True:
+            event, values = window.read()
+            if event == "Submit":
+                window.Close()
+                return values["answer"]
+
+
+def ask_file(question):
+    """Get User Input for File.
+
+    Get user input for a file
+
+    Args:
+        question (str): Question to ask user
+
+    Returns:
+        str: Path to file
+    
+    """
+    if config.mode == "cli":
+        f = "/"
+        while not config.exists(f):
+            f = input(question)
+        return f
+    elif config.mode == "gui":
+        layout = [
+            [sg.Text(question)],
+            [sg.InputText(key="answer"), sg.FileBrowse()],
+            [sg.Button("Submit")]
+        ]
+        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        while True:
+            event, values = window.read()
+            if event == "Submit":
+                window.Close()
+                return values["answer"]
+
+
+def get_input(question, options, default, gui_labels=[]):
     """Get User Input.
 
     Get user input, except make sure the input provided matches one of the options we're looking for
@@ -27,19 +95,56 @@ def get_input(question, options, default):
         question (str): Question to ask the user
         options (str[]): List of options the user can choose from
         default (str): Default option (used when user enters nothing)
+        gui_labels (str[]): Labels to use for GUI buttons/dropdown menus (optional)
 
     Returns:
         str: Option the user chose
 
     """
-    answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
-    while answer not in options and answer != "":
-        answer = input(question)
-        answer = answer.lower()  # Loop ask question while the answer is invalid or not blank
-    if answer == "":
-        return default  # If answer is blank return default answer
-    else:
-        return answer  # Return answer if it isn't the default answer
+    if config.mode == "cli":
+        options_form = list(options)  # Otherwise, Python would "link" options_form with options
+        options_form[options_form.index(default)] = options_form[options_form.index(default)].upper()
+        if len(options) > 3:
+            question += "\n[" + "/".join(options_form) + "]"
+        else:
+            question += " [" + "/".join(options_form) + "]"
+        answer = "This is a string. There are many others like it, but this one is mine."  # Set answer to something
+        while answer not in options and answer != "":
+            answer = input(question)
+            answer = answer.lower()  # Loop ask question while the answer is invalid or not blank
+        if answer == "":
+            return default  # If answer is blank return default answer
+        else:
+            return answer  # Return answer if it isn't the default answer
+    elif config.mode == "gui":
+        if gui_labels == []:
+            gui_labels = options
+        if len(options) <= 5:
+            button_list = []
+            for o in gui_labels:
+                button_list.append(sg.Button(o))
+            layout = [
+                [sg.Text(question)],
+                button_list
+            ]
+            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            while True:
+                event, values = window.read()
+                if event in gui_labels:
+                    window.Close()
+                    return options[gui_labels.index(event)]
+        else:
+            layout = [
+                [sg.Text(question)],
+                [sg.Combo(gui_labels, key="option"), sg.Button("Submit")]
+            ]
+            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            while True:
+                event, values = window.read()
+                if event == "Submit":
+                    window.Close()
+                    return options[gui_labels.index(values["option"])]
+
 
 
 def endi(state):
@@ -58,15 +163,22 @@ def endi(state):
         return "disabled"
 
 
-def leave(exit_code=0):
-    """Exit Program.
+def pprint(st):
+    if config.mode == "gui":
+        sg.Popup(st)
+    elif config.mode == "cli":
+        print(st)
 
-    Leaves the program after writing the database and removing the lock.
+
+def progress(val):
+    """Update Progress of Operation.
+
+    Updates a progress bar (if we have a GUI) as hamstall processes run
 
     Args:
-        exit_code (int): Exit code. Defaults to 0.
+        val (int): Value to update the progress bar to.
 
     """
-    config.write_db()
-    config.unlock()
-    sys.exit(exit_code)
+    if config.mode == "gui":
+        if config.install_bar is not None:
+            config.install_bar.UpdateBar(val)

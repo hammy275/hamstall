@@ -22,9 +22,9 @@ import shutil
 
 ###VERSIONS###
 
-version = "1.2.0"
-prog_internal_version = 28
-file_version = 5
+version = "1.3.0"
+prog_internal_version = 54
+file_version = 8
 
 #############
 
@@ -51,11 +51,12 @@ def get_shell_file():
         str: File name in home directory to store PATHs, variables, etc.
 
     """
-    vprint("Auto-detecting shell")
     shell = os.environ["SHELL"]
     if "bash" in shell:
+        vprint("Auto-detected bash")
         return ".bashrc"
     elif "zsh" in shell:
+        vprint("Auto-detected zsh")
         return ".zshrc"
     else:
         vprint("Couldn't auto-detect shell environment! Defaulting to bash...")
@@ -78,10 +79,10 @@ def read_config(key):
             return False
         elif key == "ShellFile":
             return get_shell_file()
+        elif key == "Mode":
+            return "cli"
         else:
-            print("Attempted to read a config value that doesn't exist!")
-            sys.exit(2)
-
+            return "Bad Value"
 
 def change_config(key, mode, value=None):
     """Change Config Value.
@@ -100,18 +101,19 @@ def change_config(key, mode, value=None):
     if mode == 'flip':
         try:
             db["options"][key] = not db["options"][key]
-            return db["options"][key]
+            r = db["options"][key]
         except KeyError:  # All config values are False by default, so this should make them True.
             db["options"].update({key: True})
-            return True
+            r = True
     elif mode == 'change':
         try:
             db["options"][key] = value
-            return value
+            r = value
         except KeyError:
             db["options"].update({key: value})
-            return value
+            r = value
     write_db()
+    return r
 
 
 def vcheck():
@@ -128,7 +130,13 @@ def vprint(to_print):
     """Print a message only if we're verbose"""
     global verbose
     if verbose:
-        print(to_print)
+        if mode == "cli":
+            print(to_print)
+        elif mode == "gui":
+            try:
+                output_area.Update(to_print)
+            except AttributeError:
+                pass  # GUI hasn't loaded yet
 
 
 def get_version(version_type):
@@ -177,12 +185,15 @@ def write_db():
     try:
         with open(full("~/.hamstall/database"), "w") as dbf:
             json.dump(db, dbf)
+        vprint("Database written!")
     except FileNotFoundError:
         print(json.dumps(db))
         print("The hamstall database could not be written to! Something is very wrong...")
         print("The database has been dumped to the screen; you should keep a copy of it.")
         print("You may be able to restore hamstall to working order by placing the above" +
               " database dump into a file called \"database\" in ~/.hamstall")
+        print("Rest in peace if you're not in a CLI app right now...")
+        unlock()
         sys.exit(3)
 
 
@@ -192,7 +203,7 @@ def name(program):
     Get the name of a program given the path to its archive/folder.
 
     Args:
-        program (str): Path to program archive/folder
+        program (str): Path to program archive
 
     Returns:
         str: Name of program to use internally
@@ -201,6 +212,24 @@ def name(program):
     program_internal_name = re.sub(r'.*/', '/', program)
     extension_length = len(extension(program))
     program_internal_name = program_internal_name[1:(len(program_internal_name) - extension_length)]
+    return program_internal_name
+
+
+def dirname(path):
+    """Get Program Name for Directory
+
+    Args:
+        path (str): Path to program folder
+
+    Returns:
+        str: Name of program to user internall
+
+    """
+    prog_int_name_temp = path[0:len(path)-1]
+    if prog_int_name_temp.startswith('/'):
+        program_internal_name = name(prog_int_name_temp + '.tar.gz')
+    else:
+        program_internal_name = name('/' + prog_int_name_temp + '.tar.gz')
     return program_internal_name
 
 
@@ -288,6 +317,7 @@ def replace_in_file(old, new, file_path):
         old (str): String to replace
         new (str): String to replace with
         file (str): Path to file to replace strings in
+
     """
     rewrite = """"""
     file_path = full(file_path)
@@ -337,6 +367,7 @@ def create(file_path):
     
     Args:
         file_path (str): Path to file to create
+
     """
     f = open(full(file_path), "w+")
     f.close()
@@ -415,6 +446,8 @@ Database structure
     }
     "programs" : {
         "package" : {
+            "git_installed": False,
+            "post_upgrade_script": None,
             "desktops" : [
                 "desktop_file_name"
             ]
@@ -424,7 +457,7 @@ Database structure
 """
 
 
-def get_db():
+def get_db(db_check=""):
     """Get Database.
 
     Returns:
@@ -437,20 +470,22 @@ def get_db():
     except FileNotFoundError:
         db = {}
     except json.decoder.JSONDecodeError:
-        db_check = ""
-        while not (db_check in ['u', 'n']):
-            db_check = input("Database is corrupt, unreadable, or in a bad format! "
-                            "Are you upgrading hamstall from an extremely early version, or are you not? [u/n]")
-        if db_check == 'u':
-            db = {}
-        else:
-            print("Please check your database! Something is horrendously wrong...")
-            sys.exit(1)
+        db = {}
+        print("We're upgrading from an extremely old version of hamstall!")
+        print("Using empty database file...")
     return db
 
 
 db = get_db()
 verbose = vcheck()
+mode = read_config("Mode")
+
+install_bar = None  # Holds a progress bar if we're in a GUI
+output_area = None  # Holds a text area if we're in a GUI (for displaying status messages)
+
+if db != {}:
+    vprint("Database loaded successfully!")
+
 try:
     branch = db["version"]["branch"]
 except KeyError:

@@ -18,12 +18,12 @@ download_files
 """
 
 
-def nothing(a):
+def nothing_two(a, b=False):
     return None
 
 
 def test_gitinstall(monkeypatch):
-    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    monkeypatch.setattr(prog_manage, "finish_install", nothing_two)
     prog_manage.gitinstall("https://github.com/hammy3502/hamstall.git", "hamstall")
     assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/hamstall/prog_manage.py"))
 
@@ -49,20 +49,16 @@ def test_verbose_toggle():
 
 
 def test_list_programs(capsys):
-    with pytest.raises(SystemExit):
-        prog_manage.list_programs()
-    assert capsys.readouterr().out.rstrip("\n") == "package"
+    prog_manage.list_programs() == ["package"]
 
 
 def test_create_desktop(monkeypatch):
-    monkeypatch.setattr("sys.stdin", StringIO("test.sh\nComment here\n\nn\nName Here\n\nend\n"))
-    prog_manage.create_desktop("package")
+    prog_manage.create_desktop("package", "Name", "test.sh", "Comment here", "False")
     assert config.exists("~/.local/share/applications/test.sh-package.desktop")
 
 
-def test_remove_desktop(monkeypatch):
-    monkeypatch.setattr("sys.stdin", StringIO("test.sh-package"))
-    prog_manage.remove_desktop("package")
+def test_remove_desktop():
+    prog_manage.remove_desktop("package", "test.sh-package")
     assert not config.exists("~/.local/share/applications/test.sh-package.desktop")
 
 
@@ -75,7 +71,7 @@ def test_uninstall():
 
 def test_install(monkeypatch):
     os.chdir(os.path.realpath(__file__)[:-19])
-    monkeypatch.setattr(prog_manage, "finish_install", nothing)
+    monkeypatch.setattr(prog_manage, "finish_install", nothing_two)
     prog_manage.install("./fake_packages/package.tar.gz")
     assert os.path.isfile(os.path.expanduser("~/.hamstall/bin/package/test.sh"))
 
@@ -100,7 +96,6 @@ def test_create_db():
 
 
 def test_erase():
-    with pytest.raises(SystemExit):
-        prog_manage.erase()
+    assert prog_manage.erase() == "Erased"
     assert os.path.isfile(config.full("~/.hamstall/hamstall.py")) is False
     assert config.check_line("source ~/.hamstall/.bashrc", "~/.bashrc", "fuzzy") is False

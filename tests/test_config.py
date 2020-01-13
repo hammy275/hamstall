@@ -67,7 +67,9 @@ def test_get_db():
         },
         "programs": {
             "package": {
-                "desktops": []
+                "git_installed": False,
+                "desktops": [],
+                "post_upgrade_script": None
             }
         }
     }

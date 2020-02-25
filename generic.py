@@ -163,9 +163,9 @@ def endi(state):
         return "disabled"
 
 
-def pprint(st):
+def pprint(st, title="hamstall-gui"):
     if config.mode == "gui":
-        sg.Popup(st)
+        sg.Popup(st, title=title)
     elif config.mode == "cli":
         print(st)
 

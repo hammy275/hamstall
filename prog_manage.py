@@ -338,6 +338,10 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
             for p in config.db["programs"].keys():
                 config.db["programs"][p]["post_upgrade_script"] = None
             config.db["version"]["file_version"] = 8
+        elif file_version == 8:
+            config.vprint("Configuration doesn't contain \"SkipQuestions\" key. Adding...")
+            config.db["options"]["SkipQuestions"] = False
+            config.db["version"]["file_version"] = 9
         try:
             file_version = get_file_version('file')
         except KeyError:
@@ -496,9 +500,11 @@ def rename(program, new_name):
         program (str): Name of program to rename
 
     Returns:
-        str: New program name
+        str/None: New program name or None if program already exists
 
     """
+    if new_name in config.db["programs"]:
+        return None
     for d in config.db["programs"][program]["desktops"]:
         config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
         "~/.local/share/applications/{}.desktop".format(d))

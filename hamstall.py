@@ -33,15 +33,18 @@ if mode == "gui":
         import tkinter
         del tkinter
     except ImportError:
+        config.mode = "cli"
         mode = "cli"
-        generic.pprint("Tkinter not installed! Defaulting to cli mode...")
+        print("Tkinter not installed! Defaulting to cli mode...")
     try:
         import PySimpleGUI as sg
     except ImportError:
+        config.mode = "cli"
         mode = "cli"
-        generic.pprint("PySimpleGUI not installed! Defaulting to cli mode...")
+        print("PySimpleGUI not installed! Defaulting to cli mode...")
 
 def gui_loop():
+    """Main Loop for GUI."""
     to_disable = ["install", "install_browse", "dirinstall", "dirinstall_browse", "gitinstall",
     "gitinstall_browse", "remove", "manage"]
     layout = [
@@ -59,7 +62,7 @@ def gui_loop():
         [sg.ProgressBar(100, key="bar")],
         [sg.Text(" "*100, key="status_area")]
     ]
-    window = sg.Window('hamstall', layout=layout)
+    window = sg.Window('hamstall-gui', layout=layout)
     while True:
         event, values = window.Read()
         config.install_bar = window.Element("bar")
@@ -164,7 +167,7 @@ Switching branches will trigger an immediate update of hamstall!
 
 Select a branch:
 m - Master branch. Less bugs, more stable, wait for updates.
-b - Beta branch. More bugs, less stable, updates asap.
+b - Beta branch. More bugs, less stable, updates ASAP.
 E - Exit branch wizard and don't change branches."""
     ans = generic.get_input(msg, ['m', 'b', 'e'], 'e', ["Master", "Beta", "Exit"])
     if ans == 'e':
@@ -215,12 +218,14 @@ au - Enable/disable the ability to install updates when hamstall is run. Current
 v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
 b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
 m - Whether or not to use the GUI for hamstall. Currently {gui}.
+s - Whether or not to skip ending questions and confirmations. Currently {skip}.
 e - Exit hamstall""".format(
             au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
-            b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui")
+            b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui"),
+            skip=generic.endi(config.read_config("SkipQuestions"))
         )
-        option = generic.get_input(msg, ['au', 'v', 'b', 'm', 'e'], 'e', 
-        ["Autoupdate", "Verbosity", "Change Branches", "Change Interaction Mode", "Exit"])
+        option = generic.get_input(msg, ['au', 'v', 'b', 'm', 's', 'e'], 'e', 
+        ["Autoupdate", "Verbosity", "Change Branches", "Change Interaction Mode", "Skip Questions", "Exit"])
         if option == 'au':
             if not prog_manage.can_update:
                 generic.pprint("requests isn't installed, so AutoInstall cannot be enabled!")
@@ -239,6 +244,8 @@ e - Exit hamstall""".format(
                 config.change_config("Mode", "change", "cli")
                 generic.pprint("Changed to CLI mode! Please restart hamstall.")
             key = None
+        elif option == 's':
+            key = "SkipQuestions"
         elif option == 'e':
             return
         if key is not None:
@@ -340,15 +347,16 @@ def install_wrap_up(program):
         program (str): Name of program
 
     """
-    yn = generic.get_input('Would you like to add the program to your PATH?', ['y', 'n'], 'y', ["Yes", "No"])
-    if yn == 'y':
-        pathify(program)
-    yn = generic.get_input('Would you like to create a binlink?', ['y', 'n'], 'n', ["Yes", "No"])
-    if yn == 'y':
-        binlink(program)
-    yn = generic.get_input('Would you like to create a desktop file?', ['y', 'n'], 'n', ["Yes", "No"])
-    if yn == 'y':
-        desktop_wizard(program)
+    if not config.db["options"]["SkipQuestions"]:
+        yn = generic.get_input('Would you like to add the program to your PATH?', ['y', 'n'], 'y', ["Yes", "No"])
+        if yn == 'y':
+            pathify(program)
+        yn = generic.get_input('Would you like to create a binlink?', ['y', 'n'], 'n', ["Yes", "No"])
+        if yn == 'y':
+            binlink(program)
+        yn = generic.get_input('Would you like to create a desktop file?', ['y', 'n'], 'n', ["Yes", "No"])
+        if yn == 'y':
+            desktop_wizard(program)
     generic.pprint("Installation complete!")
 
 
@@ -412,7 +420,11 @@ E - Exit program management""".format(program=program, git=git_msg, g=g_msg, us=
                 new_name = input("Please enter the name you would like to change this program to: ")
                 if not new_name.replace("_", "").replace("-", "").isalnum():
                     generic.pprint("Alphanumeric characters, dashes, and underscores only, please!")
-            program = prog_manage.rename(program, new_name)
+            r_program = prog_manage.rename(program, new_name)
+            if r_program is None:
+                generic.pprint("Specified program name is already taken by another program!")
+            else:
+                program = r_program
         elif option == 'u':
             prog_manage.uninstall(program)
             break
@@ -456,7 +468,7 @@ E - Exit program management""".format(program=program, git=git_msg, g=g_msg, us=
             elif status == "Script error":
                 generic.pprint("Error while executing the supplied upgrade script!")
             elif status == "OSError":
-                generic.pprint("Shell not specified! Please specify one at the top of the supplied script (ie. #!/bin/sh)")
+                generic.pprint("Shell not specified! Please specify one at the top of the supplied script (ex. #!/bin/sh)")
         elif option == 'us':
             msg = """
 Please input the script you would like to run to upgrade an installed program.
@@ -711,7 +723,7 @@ def parse_args(args=None):
             generic.pprint("You have no programs installed!")
             exit_code = 1
         else:
-            msg = ""
+            msg = "Program Update Information:\n\n"
             exit_code = 0
             for p in status.keys():
                 if status[p] == "Success":

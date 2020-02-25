@@ -51,7 +51,9 @@ def update_program(program):
     """
     if config.db["programs"][program]["git_installed"]:
         status = update_git_program(program)
-        if status != "Success":
+        if config.db["programs"][program]["post_upgrade_script"] is None:
+            return status
+        elif status != "Success":
             return status
     if config.db["programs"][program]["post_upgrade_script"] is not None:
         if not config.db["programs"][program]["post_upgrade_script"]:
@@ -101,11 +103,14 @@ def update_git_program(program):
 
     """
     if not config.check_bin("git"):
+        config.vprint("git isn't installed!")
         return "No git"
     err = call(["git", "pull"], cwd=config.full("~/.hamstall/bin/{}".format(program)))
     if err != 0:
+        config.vprint("Failed updating: {}".format(program))
         return "Error updating"
     else:
+        config.vprint("Successfully updated: {}".format(program))
         return "Success"
 
 

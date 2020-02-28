@@ -16,11 +16,15 @@
     You should have received a copy of the GNU General Public License
     along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
 
+import sys
 import os
 import argparse
 import sys
 import getpass
 import shutil
+
+sys.path.insert(1, os.path.expanduser("~/.hamstall/"))
+
 import config
 import generic
 import prog_manage

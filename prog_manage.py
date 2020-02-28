@@ -278,7 +278,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     if start_fts:  # Check if -f or --first is supplied
         return first_time_setup()
 
-    if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
+    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')):  # Make sure hamstall is installed
         return "Not installed"
 
     try:  # Lingering upgrades check
@@ -342,6 +342,17 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
             config.vprint("Configuration doesn't contain \"SkipQuestions\" key. Adding...")
             config.db["options"]["SkipQuestions"] = False
             config.db["version"]["file_version"] = 9
+        elif file_version == 9:
+            config.vprint("Moving hamstall to a seperate directory to be callable without alias!")
+            try:
+                os.mkdir(config.full("~/.hamstall/hamstall_execs"))
+            except FileExistsError:
+                generic.pprint("Please remove the \"hamstall_execs\" directory in your folder!")
+                sys.exit(1)
+            move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
+            config.replace_in_file("alias hamstall='python3 ~/.hamstall/hamstall.py'", "export PATH=$PATH:{}".format(
+                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")
+            config.db["version"]["file_version"] = 10
         try:
             file_version = get_file_version('file')
         except KeyError:
@@ -723,7 +734,7 @@ def erase():
         str: "Erased" on success or "Not installed" if hamstall isn't installed.
 
     """
-    if not (config.exists(config.full("~/.hamstall/hamstall.py"))):
+    if not (config.exists(config.full("~/.hamstall/hamstall_execs/hamstall"))):
         return "Not installed"
     config.vprint('Removing source line from bashrc')
     config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
@@ -759,7 +770,7 @@ def first_time_setup():
         str: "Already installed" if already installed, "Success" on installation success.
 
     """
-    if config.exists(config.full('~/.hamstall/hamstall.py')):
+    if config.exists(config.full('~/.hamstall/hamstall_execs/hamstall')):
         return "Already installed"
     print('Installing hamstall to your system...')
     try:
@@ -785,7 +796,11 @@ def first_time_setup():
             except FileNotFoundError:
                 return "Bad copy"
     config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
-    config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
+    os.mkdir(config.full("~/.hamstall/hamstall_execs"))
+    move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))  # Move hamstall.py to execs dir
+    config.add_line("export PATH=$PATH:{}".format(
+                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")  # Add bashrc line
+    os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
     config.unlock()
     return "Success"
 

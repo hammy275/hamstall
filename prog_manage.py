@@ -278,7 +278,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     if start_fts:  # Check if -f or --first is supplied
         return first_time_setup()
 
-    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')):  # Make sure hamstall is installed
+    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')) and not(config.exists("~/.hamstall/hamstall.py")):  # Make sure hamstall is installed
         return "Not installed"
 
     try:  # Lingering upgrades check
@@ -718,6 +718,9 @@ def update():
         elif status == "No internet":
             return "No internet"
         generic.progress(75)
+        move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
+        os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
+        generic.progress(85)
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"

@@ -559,27 +559,34 @@ def finish_install(program_internal_name, is_git=False):
     return "Installed"
 
 
-def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon=""):
+def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon="", path=""):
     """Create Desktop.
 
     Create a desktop file for a program installed through hamstall.
 
     Args:
-         program_internal_name (str): Name of program
-         name (str): The name as will be used in the .desktop file
-         program_file (str): The file in the program directory to point the .desktop to
-         comment (str): The comment as to be displayed in the .desktop file
-         should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
-         cats (str[]): List of categories to put in .desktop file
-         icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        program_internal_name (str/None): Name of program or None if not a hamstall program.
+        name (str): The name as will be used in the .desktop file
+        program_file (str): The file in the program directory to point the .desktop to, or the path to it if program_internal_name is None
+        comment (str): The comment as to be displayed in the .desktop file
+        should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
+        cats (str[]): List of categories to put in .desktop file
+        icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        path (str): The path to where the .desktop should be run. Only used when program_internal_name is None.
 
     Returns:
         str: "Already exists" if the .desktop file already exists or "Created" if the desktop file was
         successfully created.
+
     """
-    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
-    desktop_name = "{}-{}".format(program_file, program_internal_name)
+    if program_internal_name is not None:
+        exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+        path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
+        desktop_name = "{}-{}".format(program_file, program_internal_name)
+    else:
+        exec_path = config.full(program_file)
+        desktop_name = name
+        path = config.full(path)
     if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
         return "Already exists"
@@ -609,8 +616,9 @@ Categories={categories}
     config.create("./{}.desktop".format(desktop_name))
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
-    config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
-    config.write_db()
+    if program_internal_name is not None:
+        config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+        config.write_db()
     return "Created"
 
 

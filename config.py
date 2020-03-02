@@ -22,7 +22,7 @@ import shutil
 
 ###VERSIONS###
 
-version = "1.3.3 beta"
+version = "1.3.3"
 prog_internal_version = 61
 file_version = 10
 

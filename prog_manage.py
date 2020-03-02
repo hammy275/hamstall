@@ -51,7 +51,9 @@ def update_program(program):
     """
     if config.db["programs"][program]["git_installed"]:
         status = update_git_program(program)
-        if status != "Success":
+        if config.db["programs"][program]["post_upgrade_script"] is None:
+            return status
+        elif status != "Success":
             return status
     if config.db["programs"][program]["post_upgrade_script"] is not None:
         if not config.db["programs"][program]["post_upgrade_script"]:
@@ -101,11 +103,14 @@ def update_git_program(program):
 
     """
     if not config.check_bin("git"):
+        config.vprint("git isn't installed!")
         return "No git"
     err = call(["git", "pull"], cwd=config.full("~/.hamstall/bin/{}".format(program)))
     if err != 0:
+        config.vprint("Failed updating: {}".format(program))
         return "Error updating"
     else:
+        config.vprint("Successfully updated: {}".format(program))
         return "Success"
 
 
@@ -273,7 +278,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     if start_fts:  # Check if -f or --first is supplied
         return first_time_setup()
 
-    if not(config.exists('~/.hamstall/hamstall.py')):  # Make sure hamstall is installed
+    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')) and not(config.exists("~/.hamstall/hamstall.py")):  # Make sure hamstall is installed
         return "Not installed"
 
     try:  # Lingering upgrades check
@@ -333,6 +338,21 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
             for p in config.db["programs"].keys():
                 config.db["programs"][p]["post_upgrade_script"] = None
             config.db["version"]["file_version"] = 8
+        elif file_version == 8:
+            config.vprint("Configuration doesn't contain \"SkipQuestions\" key. Adding...")
+            config.db["options"]["SkipQuestions"] = False
+            config.db["version"]["file_version"] = 9
+        elif file_version == 9:
+            config.vprint("Moving hamstall to a seperate directory to be callable without alias!")
+            try:
+                os.mkdir(config.full("~/.hamstall/hamstall_execs"))
+            except FileExistsError:
+                generic.pprint("Please remove the \"hamstall_execs\" directory in your folder!")
+                sys.exit(1)
+            move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
+            config.replace_in_file("alias hamstall='python3 ~/.hamstall/hamstall.py'", "export PATH=$PATH:{}".format(
+                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")
+            config.db["version"]["file_version"] = 10
         try:
             file_version = get_file_version('file')
         except KeyError:
@@ -491,9 +511,11 @@ def rename(program, new_name):
         program (str): Name of program to rename
 
     Returns:
-        str: New program name
+        str/None: New program name or None if program already exists
 
     """
+    if new_name in config.db["programs"]:
+        return None
     for d in config.db["programs"][program]["desktops"]:
         config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
         "~/.local/share/applications/{}.desktop".format(d))
@@ -537,27 +559,34 @@ def finish_install(program_internal_name, is_git=False):
     return "Installed"
 
 
-def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon=""):
+def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon="", path=""):
     """Create Desktop.
 
     Create a desktop file for a program installed through hamstall.
 
     Args:
-         program_internal_name (str): Name of program
-         name (str): The name as will be used in the .desktop file
-         program_file (str): The file in the program directory to point the .desktop to
-         comment (str): The comment as to be displayed in the .desktop file
-         should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
-         cats (str[]): List of categories to put in .desktop file
-         icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        program_internal_name (str/None): Name of program or None if not a hamstall program.
+        name (str): The name as will be used in the .desktop file
+        program_file (str): The file in the program directory to point the .desktop to, or the path to it if program_internal_name is None
+        comment (str): The comment as to be displayed in the .desktop file
+        should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
+        cats (str[]): List of categories to put in .desktop file
+        icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        path (str): The path to where the .desktop should be run. Only used when program_internal_name is None.
 
     Returns:
         str: "Already exists" if the .desktop file already exists or "Created" if the desktop file was
         successfully created.
+
     """
-    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
-    desktop_name = "{}-{}".format(program_file, program_internal_name)
+    if program_internal_name is not None:
+        exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+        path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
+        desktop_name = "{}-{}".format(program_file, program_internal_name)
+    else:
+        exec_path = config.full(program_file)
+        desktop_name = name
+        path = config.full(path)
     if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
         return "Already exists"
@@ -587,8 +616,9 @@ Categories={categories}
     config.create("./{}.desktop".format(desktop_name))
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
-    config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
-    config.write_db()
+    if program_internal_name is not None:
+        config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+        config.write_db()
     return "Created"
 
 
@@ -696,6 +726,9 @@ def update():
         elif status == "No internet":
             return "No internet"
         generic.progress(75)
+        move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
+        os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
+        generic.progress(85)
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"
@@ -712,7 +745,7 @@ def erase():
         str: "Erased" on success or "Not installed" if hamstall isn't installed.
 
     """
-    if not (config.exists(config.full("~/.hamstall/hamstall.py"))):
+    if not (config.exists(config.full("~/.hamstall/hamstall_execs/hamstall"))):
         return "Not installed"
     config.vprint('Removing source line from bashrc')
     config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
@@ -748,7 +781,7 @@ def first_time_setup():
         str: "Already installed" if already installed, "Success" on installation success.
 
     """
-    if config.exists(config.full('~/.hamstall/hamstall.py')):
+    if config.exists(config.full('~/.hamstall/hamstall_execs/hamstall')):
         return "Already installed"
     print('Installing hamstall to your system...')
     try:
@@ -774,7 +807,11 @@ def first_time_setup():
             except FileNotFoundError:
                 return "Bad copy"
     config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
-    config.add_line("alias hamstall='python3 ~/.hamstall/hamstall.py'\n", "~/.hamstall/.bashrc")  # Add bashrc line
+    os.mkdir(config.full("~/.hamstall/hamstall_execs"))
+    move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))  # Move hamstall.py to execs dir
+    config.add_line("export PATH=$PATH:{}".format(
+                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")  # Add bashrc line
+    os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
     config.unlock()
     return "Success"
 

@@ -22,9 +22,9 @@ import shutil
 
 ###VERSIONS###
 
-version = "1.3.2"
-prog_internal_version = 56
-file_version = 8
+version = "1.3.3"
+prog_internal_version = 61
+file_version = 10
 
 #############
 
@@ -37,6 +37,7 @@ def check_bin(bin):
     
     Returns:
         bool: Whether or not the binary exists.
+
     """
     return shutil.which(bin) is not None
 
@@ -75,7 +76,7 @@ def read_config(key):
     try:
         return db["options"][key]
     except KeyError:
-        if key in ["Verbose", "AutoInstall"]:
+        if key in ["Verbose", "AutoInstall", "SkipQuestions"]:
             return False
         elif key == "ShellFile":
             return get_shell_file()

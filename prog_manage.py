@@ -713,9 +713,11 @@ def update():
         tarstall_message = """
 hamstall has a new name, tarstall!
 
-While just a new name, it's technically a completely different program (same codebase, but still), and requires
-being updated to. Once updated, everything setup by hamstall will continue to function as normal, but anything
-added manually by a user/administrator to hamstall programs (startup services, etc.) may break!
+While just a new name, it's technically a completely different program
+(same codebase, but still), and requires being updated to. Once updated, 
+everything setup by hamstall will continue to function as normal, 
+but anything added manually by a user/administrator to hamstall 
+programs (startup services, etc.) may break!
 
 Generally speaking, you should be safe to update! Would you like to update?"""
         you_sure = generic.get_input(tarstall_message, ['y', 'n'], 'y', ["Yes", "No"])

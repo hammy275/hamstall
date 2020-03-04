@@ -1096,7 +1096,7 @@ def download_files(files, folder):
         return "Fail"
     for i in files:
         try:
-            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/")
+            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/{}".format(i))
         except requests.ConnectionError:
             return "No internet"
         open(config.full(folder + i), 'wb').write(r.content)

@@ -1,18 +1,18 @@
-"""hamstall: A package manager for managing archives
+"""tarstall: A package manager for managing archives
     Copyright (C) 2019  hammy3502
 
-    hamstall is free software: you can redistribute it and/or modify
+    tarstall is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    hamstall is distributed in the hope that it will be useful,
+    tarstall is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+    along with tarstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
 import config
@@ -26,7 +26,7 @@ if config.mode == "gui":
     try:
         import PySimpleGUI as sg
     except ImportError:
-        pass  # This will be caught by hamstall.py, let's not worry about it here.
+        pass  # This will be caught by tarstall.py, let's not worry about it here.
 
 def ask(question):
     """Get Any User Input.
@@ -47,7 +47,7 @@ def ask(question):
             [sg.Text(question)],
             [sg.InputText(key="answer"), sg.Button("Submit")]
         ]
-        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        window = sg.Window("tarstall-gui", layout, disable_close=True)
         while True:
             event, values = window.read()
             if event == "Submit":
@@ -78,7 +78,7 @@ def ask_file(question):
             [sg.InputText(key="answer"), sg.FileBrowse()],
             [sg.Button("Submit")]
         ]
-        window = sg.Window("hamstall-gui", layout, disable_close=True)
+        window = sg.Window("tarstall-gui", layout, disable_close=True)
         while True:
             event, values = window.read()
             if event == "Submit":
@@ -127,7 +127,7 @@ def get_input(question, options, default, gui_labels=[]):
                 [sg.Text(question)],
                 button_list
             ]
-            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            window = sg.Window("tarstall-gui", layout, disable_close=True)
             while True:
                 event, values = window.read()
                 if event in gui_labels:
@@ -138,7 +138,7 @@ def get_input(question, options, default, gui_labels=[]):
                 [sg.Text(question)],
                 [sg.Combo(gui_labels, key="option"), sg.Button("Submit")]
             ]
-            window = sg.Window("hamstall-gui", layout, disable_close=True)
+            window = sg.Window("tarstall-gui", layout, disable_close=True)
             while True:
                 event, values = window.read()
                 if event == "Submit":
@@ -163,7 +163,7 @@ def endi(state):
         return "disabled"
 
 
-def pprint(st, title="hamstall-gui"):
+def pprint(st, title="tarstall-gui"):
     if config.mode == "gui":
         sg.Popup(st, title=title)
     elif config.mode == "cli":
@@ -173,7 +173,7 @@ def pprint(st, title="hamstall-gui"):
 def progress(val):
     """Update Progress of Operation.
 
-    Updates a progress bar (if we have a GUI) as hamstall processes run
+    Updates a progress bar (if we have a GUI) as tarstall processes run
 
     Args:
         val (int): Value to update the progress bar to.

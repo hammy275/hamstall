@@ -1,18 +1,18 @@
-"""hamstall: A package manager for managing archives
+"""tarstall: A package manager for managing archives
     Copyright (C) 2019  hammy3502
 
-    hamstall is free software: you can redistribute it and/or modify
+    tarstall is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    hamstall is distributed in the hope that it will be useful,
+    tarstall is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+    along with tarstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import os
 import sys
@@ -22,9 +22,9 @@ import shutil
 
 ###VERSIONS###
 
-version = "1.3.3"
-prog_internal_version = 62
-file_version = 10
+version = "hamstall --> tarstall transition"
+prog_internal_version = 63
+file_version = 11
 
 #############
 
@@ -67,7 +67,7 @@ def get_shell_file():
 def read_config(key):
     """Read config value.
 
-    Gets the value stored in ~/.hamstall/config for the given key
+    Gets the value stored in ~/.tarstall/config for the given key
 
     Returns:
         Any type: The value found at the key supplied
@@ -159,19 +159,19 @@ def get_version(version_type):
 
 
 def lock():
-    """Lock hamstall.
+    """Lock tarstall.
 
-    Lock hamstall to prevent multiple instances of hamstall being used alongside each other
+    Lock tarstall to prevent multiple instances of tarstall being used alongside each other
 
     """
-    create("/tmp/hamstall-lock")
+    create("/tmp/tarstall-lock")
     vprint("Lock created!")
 
 
 def unlock():
-    """Remove hamstall lock."""
+    """Remove tarstall lock."""
     try:
-        os.remove(full("/tmp/hamstall-lock"))
+        os.remove(full("/tmp/tarstall-lock"))
     except FileNotFoundError:
         pass
     vprint("Lock removed!")
@@ -184,15 +184,15 @@ def write_db():
 
     """
     try:
-        with open(full("~/.hamstall/database"), "w") as dbf:
+        with open(full("~/.tarstall/database"), "w") as dbf:
             json.dump(db, dbf)
         vprint("Database written!")
     except FileNotFoundError:
         print(json.dumps(db))
-        print("The hamstall database could not be written to! Something is very wrong...")
+        print("The tarstall database could not be written to! Something is very wrong...")
         print("The database has been dumped to the screen; you should keep a copy of it.")
-        print("You may be able to restore hamstall to working order by placing the above" +
-              " database dump into a file called \"database\" in ~/.hamstall")
+        print("You may be able to restore tarstall to working order by placing the above" +
+              " database dump into a file called \"database\" in ~/.tarstall")
         print("Rest in peace if you're not in a CLI app right now...")
         unlock()
         sys.exit(3)
@@ -264,7 +264,7 @@ def exists(file_name):
 
     """
     try:
-        return os.path.isfile(full(file_name))
+        return os.path.isfile(full(file_name)) or os.path.isdir(full(file_name))
     except FileNotFoundError:
         return False
 
@@ -273,10 +273,10 @@ def locked():
     """Get Lock State.
 
     Returns:
-        bool: True if hamstall is locked. False otherwise.
+        bool: True if tarstall is locked. False otherwise.
 
     """
-    return exists("/tmp/hamstall-lock")
+    return exists("/tmp/tarstall-lock")
 
 
 def full(file_name):
@@ -466,14 +466,14 @@ def get_db(db_check=""):
 
     """
     try:
-        with open(full("~/.hamstall/database")) as f:
+        with open(full("~/.tarstall/database")) as f:
             db = json.load(f)
-    except FileNotFoundError:
-        db = {}
-    except json.decoder.JSONDecodeError:
-        db = {}
-        print("We're upgrading from an extremely old version of hamstall!")
-        print("Using empty database file...")
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        try:
+            with open(full("~/.hamstall/database")) as f:
+                db = json.load(f)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            db = {}
     return db
 
 

@@ -1,20 +1,20 @@
 #!/usr/bin/python3
 
-"""hamstall: A package manager for managing archives
+"""tarstall: A package manager for managing archives
     Copyright (C) 2019  hammy3502
 
-    hamstall is free software: you can redistribute it and/or modify
+    tarstall is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    hamstall is distributed in the hope that it will be useful,
+    tarstall is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+    along with tarstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
 import os
@@ -23,7 +23,7 @@ import sys
 import getpass
 import shutil
 
-sys.path.insert(1, os.path.expanduser("~/.hamstall/"))
+sys.path.insert(1, os.path.abspath(os.path.expanduser("{}/..".format(os.path.dirname(__file__)))))
 
 import config
 import generic
@@ -57,16 +57,16 @@ def gui_loop():
         [sg.Radio("Install Directory: ", "Todo", enable_events=True, key="should_dirinstall"), sg.InputText(key="dirinstall", disabled=True), sg.FolderBrowse(disabled=True, key="dirinstall_browse")],
         [sg.Radio("Gitinstall: ", "Todo", enable_events=True, key="should_gitinstall"), sg.InputText(key="gitinstall", disabled=True), sg.FileBrowse(disabled=True, key="gitinstall_browse")],
         [sg.Radio("Remove: ", "Todo", enable_events=True, key="should_remove"), sg.Combo(prog_manage.list_programs(), key="remove", disabled=True)],
-        [sg.Radio("Erase hamstall", "Todo", enable_events=True, key="should_erase")],
-        [sg.Radio("Update hamstall", "Todo", enable_events=True, key="should_update")],
+        [sg.Radio("Erase tarstall", "Todo", enable_events=True, key="should_erase")],
+        [sg.Radio("Update tarstall", "Todo", enable_events=True, key="should_update")],
         [sg.Radio("Manage: ", "Todo", enable_events=True, key="should_manage"), sg.Combo(prog_manage.list_programs(), key="manage", disabled=True)],
-        [sg.Radio("Configure hamstall", "Todo", enable_events=True, key="should_configure")],
+        [sg.Radio("Configure tarstall", "Todo", enable_events=True, key="should_configure")],
         [sg.Radio("Upgrade all programs that can be upgraded", "Todo", enable_events=True, key="should_update_programs")],
         [sg.Button("Go"), sg.Button("Exit")],
         [sg.ProgressBar(100, key="bar")],
         [sg.Text(" "*100, key="status_area")]
     ]
-    window = sg.Window('hamstall-gui', layout=layout)
+    window = sg.Window('tarstall-gui', layout=layout)
     while True:
         event, values = window.Read()
         config.install_bar = window.Element("bar")
@@ -94,12 +94,12 @@ def gui_loop():
             elif values["should_update_programs"]:
                 status = parse_args(["--update-programs"])
             if status == "Locked":
-                generic.pprint("hamstall is locked! You can unlock it, but if another instance of hamstall is running, things will break!")
-                ul = generic.get_input("Would you like to unlock hamstall? Only do this if no other instances of hamstall are running!", ['y', 'n'], 'n',
+                generic.pprint("tarstall is locked! You can unlock it, but if another instance of tarstall is running, things will break!")
+                ul = generic.get_input("Would you like to unlock tarstall? Only do this if no other instances of tarstall are running!", ['y', 'n'], 'n',
                 ["Yes", "No"])
                 if ul == 'y':
                     parse_args(["--remove-lock"])
-                    generic.pprint("hamstall unlocked! Please specify what you would like to do again!")
+                    generic.pprint("tarstall unlocked! Please specify what you would like to do again!")
                 else:
                     sys.exit(1)
             else:
@@ -161,12 +161,12 @@ def branch_wizard():
     """Switch Branches."""
     msg = """\n\n
 ####WARNING####
-WARNING: You are changing branches of hamstall!
+WARNING: You are changing branches of tarstall!
 Changing from master to beta means you may receive updates that contain bugs, some extremely severe!
-Changing from beta to master means you will either HAVE ALL OF YOUR HAMSTALL PROGRAMS DELETED
+Changing from beta to master means you will either HAVE ALL OF YOUR tarstall PROGRAMS DELETED
 or you will have to STAY ON THE UPDATE YOU CURRENTLY HAVE UNTIL MASTER CATCHES UP!
 
-Switching branches will trigger an immediate update of hamstall!
+Switching branches will trigger an immediate update of tarstall!
 ###############
 
 Select a branch:
@@ -191,7 +191,7 @@ E - Exit branch wizard and don't change branches."""
         else:
             if ans == "m":
                 branch = "master"
-                should_reset = generic.get_input("Would you like to reset hamstall or wait for master to update past where you are? [r/W]",
+                should_reset = generic.get_input("Would you like to reset tarstall or wait for master to update past where you are? [r/W]",
                 ["r", "w"], "w", ["Reset", "Wait"])
             elif ans == "b":
                 branch = "beta"
@@ -204,8 +204,8 @@ E - Exit branch wizard and don't change branches."""
                 generic.pprint("Invalid branch specified!")
                 return
             elif status == "Reset":
-                generic.pprint("Successfully switched to the master branch and reset hamstall!")
-                generic.pprint("Please run hamstall again to finish the downgrade process!")
+                generic.pprint("Successfully switched to the master branch and reset tarstall!")
+                generic.pprint("Please run tarstall again to finish the downgrade process!")
                 return
             elif status == "Waiting":
                 generic.pprint("Successfully switched to the master branch!")
@@ -214,16 +214,16 @@ E - Exit branch wizard and don't change branches."""
 
 
 def configure():
-    """Change hamstall Options."""
+    """Change tarstall Options."""
     while True:
         msg = """
 Select an option:
-au - Enable/disable the ability to install updates when hamstall is run. Currently {au}.
-v - Enable/disable verbose mode, showing more output when hamstall commands are run. Currently {v}.
-b - Swap branches in hamstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
-m - Whether or not to use the GUI for hamstall. Currently {gui}.
+au - Enable/disable the ability to install updates when tarstall is run. Currently {au}.
+v - Enable/disable verbose mode, showing more output when tarstall commands are run. Currently {v}.
+b - Swap branches in tarstall. Allows you to get updates sooner at the cost of possible bugs. Current branch: {b}.
+m - Whether or not to use the GUI for tarstall. Currently {gui}.
 s - Whether or not to skip ending questions and confirmations. Currently {skip}.
-e - Exit hamstall""".format(
+e - Exit tarstall""".format(
             au=generic.endi(config.read_config("AutoInstall")), v=generic.endi(config.read_config("Verbose")),
             b=config.db["version"]["branch"], gui=generic.endi(config.read_config("Mode") == "gui"),
             skip=generic.endi(config.read_config("SkipQuestions"))
@@ -243,13 +243,13 @@ e - Exit hamstall""".format(
         elif option == 'm':
             if config.read_config("Mode") == "cli":
                 config.change_config("Mode", "change", "gui")
-                prog_manage.create_desktop(None, "hamstall", "~/.hamstall/hamstall_execs/hamstall", 
-                "Run hamstall's GUI", "False", ["Utility"], "", "~/.hamstall/hamstall_execs/")
-                generic.pprint("Changed to GUI mode! Please restart hamstall.")
+                prog_manage.create_desktop(None, "tarstall", "~/.tarstall/tarstall_execs/tarstall", 
+                "Run tarstall's GUI", "False", ["Utility"], "", "~/.tarstall/tarstall_execs/")
+                generic.pprint("Changed to GUI mode! Please restart tarstall.")
             else:
                 config.change_config("Mode", "change", "cli")
-                os.remove(config.full("~/.local/share/applications/hamstall.desktop"))
-                generic.pprint("Changed to CLI mode! Please restart hamstall.")
+                os.remove(config.full("~/.local/share/applications/tarstall.desktop"))
+                generic.pprint("Changed to CLI mode! Please restart tarstall.")
             key = None
         elif option == 's':
             key = "SkipQuestions"
@@ -281,7 +281,7 @@ def binlink(program):
     """
     yn = 'y'
     while yn != 'n':
-        files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+        files = os.listdir(config.full('~/.tarstall/bin/' + program + '/'))
         generic.pprint(' '.join(files))
         file_chosen = 'Cool fact. This line was originally written on line 163.'
         while file_chosen not in files:
@@ -299,7 +299,7 @@ def desktop_wizard(program):
         program (str): Program to create .desktop file of
 
     """
-    files = os.listdir(config.full('~/.hamstall/bin/' + program + '/'))
+    files = os.listdir(config.full('~/.tarstall/bin/' + program + '/'))
     generic.pprint(' '.join(files))
     program_file = '/Placeholder/'
     while program_file not in files:
@@ -452,10 +452,10 @@ E - Exit program management""".format(program=program, git=git_msg, g=g_msg, us=
                 prog_manage.remove_desktop(program, inp)
         elif option == 's':
             if mode == "gui":
-                generic.pprint("This feature can only be used from the command line version of hamstall!")
+                generic.pprint("This feature can only be used from the command line version of tarstall!")
             else:
                 generic.pprint("When you exit the shell, you will be returned to here.")
-                os.chdir(config.full("~/.hamstall/bin/" + program + "/"))
+                os.chdir(config.full("~/.tarstall/bin/" + program + "/"))
                 if config.get_shell_file() == ".zshrc":
                     call(["/bin/zsh"])
                 else:
@@ -498,17 +498,17 @@ def fts_status(status):
         status (str): Status string from first time setup
 
     Returns:
-        int: Exit code to exit hamstall with
+        int: Exit code to exit tarstall with
 
     """
     if status == "Success":
         generic.pprint('First time setup complete!')
         generic.pprint('Please run the command "source ~/{}" or restart your terminal.'.format(config.read_config("ShellFile")))
-        generic.pprint('Afterwards, you may begin using hamstall with the hamstall command!')
+        generic.pprint('Afterwards, you may begin using tarstall with the tarstall command!')
         return 0
 
     elif status == "Already installed":
-        generic.pprint("hamstall is already installed on your system! Cancelling installation.")
+        generic.pprint("tarstall is already installed on your system! Cancelling installation.")
         return 1
 
     elif status == "Bad copy":
@@ -521,7 +521,7 @@ def fts_status(status):
 def parse_args(args=None):
     """Argument Parsing.
 
-    Parses arguments and runs hamstall startup.
+    Parses arguments and runs tarstall startup.
 
     """
     exit_code = 0
@@ -533,56 +533,56 @@ def parse_args(args=None):
     group.add_argument('-r', "--remove", help="Remove an insatlled program")
     group.add_argument('-l', "--list", help="List installed programs", action="store_true")
     group.add_argument('-f', "--first", help="Run first time setup", action="store_true")
-    group.add_argument('-e', "--erase", help="Delete hamstall from your system", action="store_true")
+    group.add_argument('-e', "--erase", help="Delete tarstall from your system", action="store_true")
     group.add_argument('-v', "--verbose", help="Toggle verbose mode", action="store_true")
-    group.add_argument('-u', '--update', help="Update hamstall if an update is available", action="store_true")
+    group.add_argument('-u', '--update', help="Update tarstall if an update is available", action="store_true")
     group.add_argument('-m', '--manage', help="Manage an installed program")
-    group.add_argument('-k', '--remove-lock', help="Remove hamstall lock file (only do this if hamstall isn't already "
+    group.add_argument('-k', '--remove-lock', help="Remove tarstall lock file (only do this if tarstall isn't already "
                                                 "running)", action="store_true")
-    group.add_argument('-c', '--config', help="Change hamstall options", action="store_true")
+    group.add_argument('-c', '--config', help="Change tarstall options", action="store_true")
     group.add_argument('-q', '--update-programs', help="Update programs installed through git and ones with upgrade scripts", action="store_true")
     if args is None:
         args = parser.parse_args()  # Parser stuff
     else:
         args = parser.parse_args(args)
 
-    status = prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock)
+    status = prog_manage.tarstall_startup(start_fts=args.first, del_lock=args.remove_lock)
 
     fts_status(status)
 
     if status == "Locked":
         if mode == "cli":
-            generic.pprint("Another instance of hamstall is probably running! Execution halted!")
+            generic.pprint("Another instance of tarstall is probably running! Execution halted!")
             sys.exit(1)
         elif mode == "gui":
             return "Locked"
 
     elif status == "Unlocked":
-        generic.pprint("hamstall unlocked!")
+        generic.pprint("tarstall unlocked!")
         sys.exit()
 
     elif status == "Not installed":
-        yn = generic.get_input('hamstall is not installed on your system. Would you like to install it?',
+        yn = generic.get_input('tarstall is not installed on your system. Would you like to install it?',
                                 ['y', 'n'], 'y')
         if yn == 'y':
             prog_manage.first_time_setup()
             exit_code = fts_status(status)
         else:
-            generic.pprint('hamstall not installed.')
+            generic.pprint('tarstall not installed.')
             config.unlock()
     
     elif status == "Root":
         generic.pprint("Don't use sudo unless you want your programs installed for root and only root!")
     
     elif status == "Old":
-        generic.pprint("You are using an extremely outdated version of hamstall, please update manually!")
+        generic.pprint("You are using an extremely outdated version of tarstall, please update manually!")
         sys.exit(1)
     
     elif status == "Old upgrade":
-        generic.pprint("You are upgrading from a VERY old version of hamstall.")
+        generic.pprint("You are upgrading from a VERY old version of tarstall.")
         generic.pprint("Press ENTER to continue and wipe your database in the upgrade process!")
         input("")
-        prog_manage.hamstall_startup(start_fts=args.first, del_lock=args.remove_lock, old_upgrade=True)
+        prog_manage.tarstall_startup(start_fts=args.first, del_lock=args.remove_lock, old_upgrade=True)
 
     if args.install is not None:
         status = prog_manage.pre_install(args.install)
@@ -678,18 +678,18 @@ def parse_args(args=None):
                 generic.pprint(p)
 
     elif args.erase:
-        erase_sure = generic.get_input("Are you sure you would like to remove hamstall from your system?",
+        erase_sure = generic.get_input("Are you sure you would like to remove tarstall from your system?",
                                     ['y', 'n'], 'n', ["Yes", "No"])
         if erase_sure == 'y':
             erase_really_sure = generic.get_input('Are you absolutely sure?' +
-                                                'This will remove all programs installed with hamstall!',
+                                                'This will remove all programs installed with tarstall!',
                                                 ['y', 'n'], 'n', ["Yes", "No"])
             if erase_really_sure == 'y':
                 status = prog_manage.erase()
                 if status == "Not installed":
-                    generic.pprint("hamstall isn't installed, so not removed!")
+                    generic.pprint("tarstall isn't installed, so not removed!")
                 elif status == "Erased":
-                    generic.pprint("hamstall has been removed!")
+                    generic.pprint("tarstall has been removed!")
                     sys.exit(0)
             else:
                 generic.pprint('Erase cancelled.')
@@ -702,7 +702,10 @@ def parse_args(args=None):
 
     elif args.update:
         status = prog_manage.update()
-        if status == "No requests":
+        if status == "No git":
+            generic.pprint("git isn't installed, please install it!")
+            exit_code = 1
+        elif status == "No requests":
             generic.pprint("requests isn't installed, please install it!")
             exit_code = 1
         elif status == "Newer version":
@@ -710,9 +713,9 @@ def parse_args(args=None):
         elif status == "No update":
             generic.pprint("No update was found!")
         elif status == "Updated":
-            generic.pprint("hamstall successfully updated!")
+            generic.pprint("tarstall successfully updated!")
         elif status == "Failed":
-            generic.pprint("hamstall update failed! hamstall is most likely missing its files. Please manually re-install it!")
+            generic.pprint("tarstall update failed!")
             exit_code = 1
         elif status == "No internet":
             generic.pprint("Failed to connect to the internet!")
@@ -743,17 +746,17 @@ def parse_args(args=None):
 
     else:
         generic.pprint("""
-hamstall. A Python based package manager to manage archives.
+tarstall. A Python based package manager to manage archives.
 Written by: hammy3502
 
-hamstall Version: {user_version}
+tarstall Version: {user_version}
 Internal Version Code: {file_version}.{prog_version}
 
-For help, type "hamstall -h"
+For help, type "tarstall -h"
 
-For additional help, the hamstall wiki is linked below.
+For additional help, the tarstall wiki is linked below.
 
-https://github.com/hammy3502/hamstall/wiki
+https://github.com/hammy3502/tarstall/wiki
         """.format(user_version=config.get_version("version"), file_version=config.get_version("file_version"),
                 prog_version=config.get_version("prog_internal_version")))
 
@@ -765,6 +768,16 @@ https://github.com/hammy3502/hamstall/wiki
 
 
 if __name__ == "__main__":
+    transition_message = """
+##################################
+WARNING
+
+You are using the hamstall --> tarstall transition build of tarstall!
+Although this build should be mostly functional, it is HIGHLY advised
+that you update (again) at your earliest convenience.
+##################################
+    """
+    generic.pprint(transition_message)
     if mode == "cli":
         parse_args()
     elif mode == "gui":

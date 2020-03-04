@@ -1,18 +1,18 @@
-"""hamstall: A package manager for managing archives
+"""tarstall: A package manager for managing archives
     Copyright (C) 2019  hammy3502
 
-    hamstall is free software: you can redistribute it and/or modify
+    tarstall is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    hamstall is distributed in the hope that it will be useful,
+    tarstall is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with hamstall.  If not, see <https://www.gnu.org/licenses/>."""
+    along with tarstall.  If not, see <https://www.gnu.org/licenses/>."""
 
 import os
 from shutil import copyfile, rmtree, move, which, copy
@@ -27,7 +27,7 @@ try:
 except ImportError:
     can_update = False
     print("##########WARNING##########")
-    print("requests library not installed! Ability to update hamstall")
+    print("requests library not installed! Ability to update tarstall")
     print("has been disabled! Use `pip3 install requests` or ")
     print("`python3 -m pip install requests` to install it!")
     print("###########################")
@@ -63,7 +63,7 @@ def update_program(program):
         else:
             try:
                 err = call(config.db["programs"][program]["post_upgrade_script"], 
-                cwd=config.full("~/.hamstall/bin/{}".format(program)))
+                cwd=config.full("~/.tarstall/bin/{}".format(program)))
                 if err != 0:
                     return "Script error"
                 else:
@@ -105,7 +105,7 @@ def update_git_program(program):
     if not config.check_bin("git"):
         config.vprint("git isn't installed!")
         return "No git"
-    err = call(["git", "pull"], cwd=config.full("~/.hamstall/bin/{}".format(program)))
+    err = call(["git", "pull"], cwd=config.full("~/.tarstall/bin/{}".format(program)))
     if err != 0:
         config.vprint("Failed updating: {}".format(program))
         return "Error updating"
@@ -150,7 +150,7 @@ def change_git_branch(program, branch):
     """
     if not config.check_bin("git"):
         return "No git"
-    err = call(["git", "checkout", "-f", branch], cwd=config.full("~/.hamstall/bin/{}".format(program)))
+    err = call(["git", "checkout", "-f", branch], cwd=config.full("~/.tarstall/bin/{}".format(program)))
     if err != 0:
         return "Error changing"
     else:
@@ -162,7 +162,7 @@ def change_branch(branch, reset=False):
 
     Args:
         branch (str): Branch to change to (master or beta)
-        reset (bool): If changing to stable, whether or not to reset hamstall. Defaults to False.
+        reset (bool): If changing to stable, whether or not to reset tarstall. Defaults to False.
 
     Returns:
         str: "Bad branch" if switching to an invalid branch, "Success" on master --> beta,
@@ -180,16 +180,16 @@ def change_branch(branch, reset=False):
     config.db["version"]["branch"] = branch
     config.write_db()
     if branch == "beta":
-        config.vprint("Updating hamstall...")
+        config.vprint("Updating tarstall...")
         generic.progress(65)
         update()
         return "Success"
     elif branch == "master":
         generic.progress(10)
         if reset:
-            config.vprint("Deleting and re-installing hamstall.")
-            os.chdir(config.full("~/.hamstall"))
-            config.vprint("Removing old hamstall .pys")
+            config.vprint("Deleting and re-installing tarstall.")
+            os.chdir(config.full("~/.tarstall"))
+            config.vprint("Removing old tarstall .pys")
             for i in os.listdir():
                 i_num = len(i) - 3
                 if i[i_num:len(i)] == '.py':
@@ -199,34 +199,34 @@ def change_branch(branch, reset=False):
                         pass
             generic.progress(25)
             try:
-                rmtree("/tmp/hamstall-temp")
+                rmtree("/tmp/tarstall-temp")
             except FileNotFoundError:
                 pass
             generic.progress(30)
-            os.mkdir("/tmp/hamstall-temp")
-            os.chdir("/tmp/hamstall-temp")
-            config.vprint("Cloning hamstall from the master branch")
-            call(["git", "clone", "https://github.com/hammy3502/hamstall.git"])
+            os.mkdir("/tmp/tarstall-temp")
+            os.chdir("/tmp/tarstall-temp")
+            config.vprint("Cloning tarstall from the master branch")
+            call(["git", "clone", "https://github.com/hammy3502/tarstall.git"])
             generic.progress(65)
-            os.chdir("/tmp/hamstall-temp/hamstall")
-            config.vprint("Adding new hamstall .pys")
+            os.chdir("/tmp/tarstall-temp/tarstall")
+            config.vprint("Adding new tarstall .pys")
             for i in os.listdir():
                 i_num = len(i) - 3
                 if i[i_num:len(i)] == '.py':
-                    copyfile(i, config.full('~/.hamstall/' + i))
+                    copyfile(i, config.full('~/.tarstall/' + i))
             generic.progress(75)
             config.vprint("Removing old database and programs.")
             try:
-                os.remove(config.full("~/.hamstall/database"))
+                os.remove(config.full("~/.tarstall/database"))
             except FileNotFoundError:
                 pass
             try:
-                rmtree(config.full("~/.hamstall/bin"))
+                rmtree(config.full("~/.tarstall/bin"))
             except FileNotFoundError:
                 pass
-            os.mkdir(config.full("~/.hamstall/bin"))
+            os.mkdir(config.full("~/.tarstall/bin"))
             generic.progress(85)
-            print("Please run hamstall again to re-create the database!")
+            print("Please run tarstall again to re-create the database!")
             config.db = {"refresh": True}
             config.write_db()
             generic.progress(90)
@@ -236,27 +236,25 @@ def change_branch(branch, reset=False):
             return "Waiting"
 
 
-def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
+def tarstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     """Run on Startup.
 
-    Runs on hamstall startup to perform any required checks and upgrades.
-    This function should always be run before doing anything else with hamstall.
+    Runs on tarstall startup to perform any required checks and upgrades.
+    This function should always be run before doing anything else with tarstall.
 
     Args:
         start_fts (bool): Whether or not to start first time setup
         del_lock (bool): Whether or not to remove the lock (if it exists)
 
     Returns:
-        str: One of many different values indicating the status of hamstall. Those include:
+        str: One of many different values indicating the status of tarstall. Those include:
         "Not installed", "Locked", "Good" (nothing bad happened), "Root", "Old" (happens
-        when upgrading from hamstall prog_version 1), "Old upgrade" if hamstall
-        needs to upgrade but it would wipe the database during the upgrade
-        process, and "Unlocked" if hamstall was successfully unlocked.
-        Can also return a string from first_time_setup.
+        when upgrading from tarstall prog_version 1), and "Unlocked" if tarstall 
+        was successfully unlocked. Can also return a string from first_time_setup.
 
     """
     if config.locked():  # Lock check
-        config.vprint("Lock file detected at /tmp/hamstall-lock.")
+        config.vprint("Lock file detected at /tmp/tarstall-lock.")
         if del_lock:
             config.vprint("Deleting the lock and continuing execution!")
             config.unlock()
@@ -269,97 +267,47 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
 
     if config.db == {"refresh": True}:  # Downgrade check
         print("Hang tight! We're finishing up your downgrade...")
-        config.create("~/.hamstall/database")
+        config.create("~/.tarstall/database")
         create_db()
         config.db = config.get_db()
         config.write_db()
-        print("We're done! Continuing hamstall execution...")
+        print("We're done! Continuing tarstall execution...")
 
     if start_fts:  # Check if -f or --first is supplied
         return first_time_setup()
 
-    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')) and not(config.exists("~/.hamstall/hamstall.py")):  # Make sure hamstall is installed
+    if not(config.exists('~/.tarstall/tarstall_execs/tarstall')) and not(config.exists("~/.hamstall/tarstall.py")) and not(config.exists('~/.hamstall/hamstall_execs/hamstall')):  # Make sure tarstall is installed
         return "Not installed"
 
-    try:  # Lingering upgrades check
-        file_version = get_file_version('file')
-    except KeyError:
-        file_version = 1
-    while config.get_version('file_version') > file_version:
-        if file_version == 1:
-            if not old_upgrade:
+    file_version = get_file_version('file')
+    while config.get_version('file_version') > file_version:  # Lingering upgrades check
+        if file_version == 10:  # Older upgrades can only take place in hamstall, not tarstall. 
+            config.vprint("And such began the conversion from hamstall to tarstall.")
+            print ("\n\nUPGRADING FROM HAMSTALL TO TARSTALL, DO NOT EXIT!\n\n")
+            if config.exists("~/.tarstall"):
+                generic.pprint("Please delete the folder in your home directory named '.tarstall'!")
                 config.unlock()
-                return "Old upgrade"
-            try:
-                config.vprint("Removing old database")
-                os.remove(config.full("~/.hamstall/database"))
-            except FileNotFoundError:
-                pass
-            config.vprint("Creating new database")
-            config.create("~/.hamstall/database")
-            create_db()
-            config.vprint("Upgraded from hamstall file version 1 to 2.")
-        elif file_version == 2:
-            config.vprint("Database needs to have the branch key! Adding...")
-            config.db["version"].update({"branch": "master"})
-            config.db["version"]["file_version"] = 3
-            config.vprint("Upgraded from hamstall file version 2 to 3.")
-        elif file_version == 3:
-            config.vprint("Database needs to have the shell key! Adding...")
-            config.db["options"].update({"ShellFile": config.get_shell_file()})
-            config.db["version"]["file_version"] = 4
-            config.vprint("Upgraded from hamstall file version 3 to 4.")
-        elif file_version == 4:
-            config.vprint("file.py merged into config.py; deleting old file.py...")
-            try:
-                os.remove(config.full("~/.hamstall/file.py"))
-                config.vprint("Deleted file.py")
-            except FileNotFoundError:
-                pass
-                config.vprint("file.py not found, so not deleted!")
-            config.db["version"]["file_version"] = 5
-            config.vprint("Upgraded from hamstall file version 4 to 5.")
-        elif file_version == 5:
-            config.vprint("Database needs to have the mode key! Adding...")
-            config.db["options"].update({"Mode": "cli"})
-            config.db["version"]["file_version"] = 6
-            config.vprint("Upgraded from hamstall file version 5 to 6.")
-        elif file_version == 6:
-            config.vprint("Programs in database need git installed flag!")
-            config.vprint("Auto-detecting based on presence of .git folder!")
-            for p in config.db["programs"].keys():
-                if os.path.isdir(config.full("~/.hamstall/bin/{}/.git".format(p))):
-                    config.db["programs"][p]["git_installed"] = True
-                else:
-                    config.db["programs"][p]["git_installed"] = False
-            config.db["version"]["file_version"] = 7
-        elif file_version == 7:
-            config.vprint("Programs in database need post_upgrade_script entry!")
-            for p in config.db["programs"].keys():
-                config.db["programs"][p]["post_upgrade_script"] = None
-            config.db["version"]["file_version"] = 8
-        elif file_version == 8:
-            config.vprint("Configuration doesn't contain \"SkipQuestions\" key. Adding...")
-            config.db["options"]["SkipQuestions"] = False
-            config.db["version"]["file_version"] = 9
-        elif file_version == 9:
-            config.vprint("Moving hamstall to a seperate directory to be callable without alias!")
-            try:
-                os.mkdir(config.full("~/.hamstall/hamstall_execs"))
-            except FileExistsError:
-                generic.pprint("Please remove the \"hamstall_execs\" directory in your folder!")
                 sys.exit(1)
-            move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
-            config.replace_in_file("alias hamstall='python3 ~/.hamstall/hamstall.py'", "export PATH=$PATH:{}".format(
-                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")
-            config.db["version"]["file_version"] = 10
-        try:
-            file_version = get_file_version('file')
-        except KeyError:
-            file_version = 1
+            else:
+                config.vprint("Renaming hamstall files and folders")
+                move(config.full("~/.hamstall/"),config.full("~/.tarstall/"))
+                move(config.full("~/.tarstall/hamstall_execs"), config.full("~/.tarstall/tarstall_execs"))
+                move(config.full("~/.tarstall/tarstall_execs/hamstall"), config.full("~/.tarstall/tarstall_execs/tarstall"))
+                config.vprint("Replacing line in shell file")
+                config.replace_in_file("source ~/.hamstall/.bashrc", "source ~/.tarstall/.bashrc", "~/{}".format(config.read_config("ShellFile")))
+                config.vprint("Replacing hamstall's bashrc lines")
+                config.replace_in_file("/.hamstall/hamstall_execs", "/.tarstall/tarstall_execs", "~/.tarstall/.bashrc")
+                config.replace_in_file("/.hamstall/bin", "/.tarstall/bin", "~/.tarstall/.bashrc")
+                config.vprint("Updating .desktop programs")
+                for p in config.db["programs"].keys():
+                    for d in config.db["programs"][p]["desktops"]:
+                        config.replace_in_file("/.hamstall/bin", "/.tarstall/bin", "~/.local/share/applications/{}.desktop".format(d))
+                config.db["version"]["file_version"] = 11
+        print("Upgrade complete! You're in the clear, just upgrade tarstall at your earliest convenience!")
+        file_version = get_file_version('file')
         config.write_db()
 
-    if get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of hamstall
+    if get_file_version('prog') == 1:  # Online update broke between prog versions 1 and 2 of tarstall
         return "Old"
 
     if config.read_config("AutoInstall"):  # Auto-update, if enabled
@@ -457,7 +405,8 @@ def create_db():
         "options": {
             "Verbose": False,
             "AutoInstall": False,
-            "ShellFile": config.get_shell_file()
+            "ShellFile": config.get_shell_file(),
+            "SkipQuestions": False
         },
         "version": {
             "file_version": config.file_version,
@@ -500,7 +449,7 @@ def remove_paths_and_binlinks(program):
         str: "Complete"
 
     """
-    config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    config.remove_line(program, "~/.tarstall/.bashrc", 'poundword')
     return "Complete"
 
 
@@ -517,18 +466,18 @@ def rename(program, new_name):
     if new_name in config.db["programs"]:
         return None
     for d in config.db["programs"][program]["desktops"]:
-        config.replace_in_file("/.hamstall/bin/{}".format(program), "/.hamstall/bin/{}".format(new_name), 
+        config.replace_in_file("/.tarstall/bin/{}".format(program), "/.tarstall/bin/{}".format(new_name), 
         "~/.local/share/applications/{}.desktop".format(d))
     generic.progress(25)
     config.db["programs"][new_name] = config.db["programs"].pop(program)
-    config.replace_in_file("export PATH=$PATH:~/.hamstall/bin/" + program, 
-    "export PATH=$PATH:~/.hamstall/bin/" + new_name, "~/.hamstall/.bashrc")
+    config.replace_in_file("export PATH=$PATH:~/.tarstall/bin/" + program, 
+    "export PATH=$PATH:~/.tarstall/bin/" + new_name, "~/.tarstall/.bashrc")
     generic.progress(50)
-    config.replace_in_file("'cd " + config.full('~/.hamstall/bin/' + program),
-    "'cd " + config.full('~/.hamstall/bin/' + new_name), "~/.hamstall/.bashrc")
+    config.replace_in_file("'cd " + config.full('~/.tarstall/bin/' + program),
+    "'cd " + config.full('~/.tarstall/bin/' + new_name), "~/.tarstall/.bashrc")
     generic.progress(75)
-    config.replace_in_file("# " + program, "# " + new_name, "~/.hamstall/.bashrc")
-    move(config.full("~/.hamstall/bin/" + program), config.full("~/.hamstall/bin/" + new_name))
+    config.replace_in_file("# " + program, "# " + new_name, "~/.tarstall/.bashrc")
+    move(config.full("~/.tarstall/bin/" + program), config.full("~/.tarstall/bin/" + new_name))
     config.write_db()
     generic.progress(90)
     return new_name
@@ -549,10 +498,10 @@ def finish_install(program_internal_name, is_git=False):
     generic.progress(90)
     config.vprint("Removing temporary install directory (if it exists)")
     try:
-        rmtree("/tmp/hamstall-temp")
+        rmtree("/tmp/tarstall-temp")
     except FileNotFoundError:
         pass
-    config.vprint("Adding program to hamstall list of programs")
+    config.vprint("Adding program to tarstall list of programs")
     config.db["programs"].update({program_internal_name: {"git_installed": is_git, "desktops": [], 
     "post_upgrade_script": None}})
     config.write_db()
@@ -562,10 +511,10 @@ def finish_install(program_internal_name, is_git=False):
 def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon="", path=""):
     """Create Desktop.
 
-    Create a desktop file for a program installed through hamstall.
+    Create a desktop file for a program installed through tarstall.
 
     Args:
-        program_internal_name (str/None): Name of program or None if not a hamstall program.
+        program_internal_name (str/None): Name of program or None if not a tarstall program.
         name (str): The name as will be used in the .desktop file
         program_file (str): The file in the program directory to point the .desktop to, or the path to it if program_internal_name is None
         comment (str): The comment as to be displayed in the .desktop file
@@ -580,8 +529,8 @@ def create_desktop(program_internal_name, name, program_file, comment="", should
 
     """
     if program_internal_name is not None:
-        exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-        path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
+        exec_path = config.full("~/.tarstall/bin/{}/{}".format(program_internal_name, program_file))
+        path = config.full("~/.tarstall/bin/{}/".format(program_internal_name))
         desktop_name = "{}-{}".format(program_file, program_internal_name)
     else:
         exec_path = config.full(program_file)
@@ -641,20 +590,20 @@ def gitinstall(git_url, program_internal_name, overwrite=False, reinstall=False)
     config.vprint("Downloading git repository")
     if overwrite:
         try:
-            rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+            rmtree(config.full("/tmp/tarstall-temp"))  # Removes temp directory (used during installs)
         except FileNotFoundError:
             pass
-        os.mkdir("/tmp/hamstall-temp")
-        os.chdir("/tmp/hamstall-temp")
+        os.mkdir("/tmp/tarstall-temp")
+        os.chdir("/tmp/tarstall-temp")
     else:
-        os.chdir(config.full("~/.hamstall/bin"))
+        os.chdir(config.full("~/.tarstall/bin"))
     generic.progress(5)
     err = call(["git", "clone", git_url])
     if err != 0:
         return "Error"
     generic.progress(65)
     if overwrite:
-        call(["rsync", "-a", "/tmp/hamstall-temp/{}/".format(program_internal_name), config.full("~/.hamstall/bin/{}".format(program_internal_name))])
+        call(["rsync", "-a", "/tmp/tarstall-temp/{}/".format(program_internal_name), config.full("~/.tarstall/bin/{}".format(program_internal_name))])
     if not overwrite:
         return finish_install(program_internal_name, True)
     else:
@@ -662,42 +611,46 @@ def gitinstall(git_url, program_internal_name, overwrite=False, reinstall=False)
 
 
 def add_binlink(file_chosen, program_internal_name):
-    line_to_add = 'alias ' + file_chosen + "='cd " + config.full('~/.hamstall/bin/' + program_internal_name) + \
+    line_to_add = 'alias ' + file_chosen + "='cd " + config.full('~/.tarstall/bin/' + program_internal_name) + \
     '/ && ./' + file_chosen + "' # " + program_internal_name + "\n"
     config.vprint("Adding alias to bashrc")
-    config.add_line(line_to_add, "~/.hamstall/.bashrc")
+    config.add_line(line_to_add, "~/.tarstall/.bashrc")
 
 
 def pathify(program_internal_name):
     """Add Program to Path.
 
-    Adds a program to PATH through ~/.hamstall/.bashrc
+    Adds a program to PATH through ~/.tarstall/.bashrc
 
     Args:
         program_internal_name (str): Name of program to add to PATH
 
     """
     config.vprint('Adding program to PATH')
-    line_to_write = "export PATH=$PATH:~/.hamstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
-    config.add_line(line_to_write, "~/.hamstall/.bashrc")
+    line_to_write = "export PATH=$PATH:~/.tarstall/bin/" + program_internal_name + ' # ' + program_internal_name + '\n'
+    config.add_line(line_to_write, "~/.tarstall/.bashrc")
     return "Complete"
 
 
 def update():
-    """Update Hamstall.
+    """Update tarstall.
 
-    Checks to see if we should update hamstall, then does so if one is available
+    Checks to see if we should update tarstall, then does so if one is available
 
     Returns:
         str: "No requests" if requests isn't installed, "No internet if there isn't
         an internet connection, "Newer version" if the installed
         version is newer than the one online, "No update" if there is no update,
-        "Updated" upon a successful update, or "Failed" if requests isn't installed.
+        "Updated" upon a successful update, "No git" if git isn't installed,
+        or "Failed" if it failed.
 
     """
     if not can_update:
         config.vprint("requests isn't installed.")
         return "No requests"
+    elif not config.check_bin("git"):
+        config.vprint("git isn't installed.")
+        return "No git"
     generic.progress(5)
     prog_version_internal = config.get_version('prog_internal_version')
     config.vprint("Checking version on GitHub")
@@ -710,36 +663,42 @@ def update():
     config.vprint('Version on GitHub: ' + str(final_version))
     generic.progress(10)
     if final_version > prog_version_internal:
-        tarstall_message = """
-hamstall has a new name, tarstall!
-
-While just a new name, it's technically a completely different program (same codebase, but still), and requires
-being updated to. Once updated, everything setup by hamstall will continue to function as normal, but anything
-added manually by a user/administrator to hamstall programs (startup services, etc.) may break!
-
-Generally speaking, you should be safe to update! Would you like to update?"""
-        you_sure = generic.get_input(tarstall_message, ['y', 'n'], 'y', ["Yes", "No"])
-        if you_sure != 'y':
-            generic.pprint("Not updating to tarstall!")
-            return
-        config.vprint('Removing old hamstall pys...')
-        os.chdir(config.full("~/.hamstall"))
-        files = os.listdir()
-        for i in files:
-            i_num = len(i) - 3
-            if i[i_num:len(i)] == '.py':
-                os.remove(config.full('~/.hamstall/' + i))
-        generic.progress(40)
-        config.vprint("Downloading new hamstall pys..")
-        status = download_files(['hamstall.py', 'generic.py', 'config.py', 'prog_manage.py'], '~/.hamstall/')
-        if status == "Fail":
+        print("An update has been found! Installing...")  # Intentionally not a generic.pprint()
+        try:
+            rmtree("/tmp/tarstall-update")
+        except FileNotFoundError:
+            pass
+        os.chdir("/tmp/")
+        os.mkdir("tarstall-update")
+        os.chdir("/tmp/tarstall-update")
+        config.vprint("Cloning tarstall repository from git")
+        err = call(["git", "clone", "--branch", config.branch, "https://github.com/hammy3502/tarstall.git"])
+        if err != 0:
+            generic.pprint("Failed while cloning the git repository for tarstall!")
             return "Failed"
-        elif status == "No internet":
-            return "No internet"
-        generic.progress(75)
-        move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
-        os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
+        generic.progress(55)
+        config.vprint("Removing old tarstall files")
+        os.chdir(config.full("~/.tarstall/"))
+        files = os.listdir()
+        to_keep = ["bin", "database", ".bashrc"]
+        for f in files:
+            if f not in to_keep:
+                if os.path.isdir(config.full("~/.tarstall/{}".format(f))):
+                    rmtree(config.full("~/.tarstall/{}".format(f)))
+                else:
+                    os.remove(config.full("~/.tarstall/{}".format(f)))
+        generic.progress(70)
+        config.vprint("Moving in new tarstall files")
+        os.chdir("/tmp/tarstall-update/tarstall/")
+        files = os.listdir()
+        for f in files:
+            move("/tmp/tarstall-update/tarstall/{}".format(f), config.full("~/.tarstall/{}".format(f)))
         generic.progress(85)
+        config.vprint("Removing old tarstall temp directory")
+        try:
+            rmtree("/tmp/tarstall-update")
+        except FileNotFoundError:
+            pass
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"
@@ -750,16 +709,16 @@ Generally speaking, you should be safe to update! Would you like to update?"""
 
 
 def erase():
-    """Remove hamstall.
+    """Remove tarstall.
 
     Returns:
-        str: "Erased" on success or "Not installed" if hamstall isn't installed.
+        str: "Erased" on success or "Not installed" if tarstall isn't installed.
 
     """
-    if not (config.exists(config.full("~/.hamstall/hamstall_execs/hamstall"))):
+    if not (config.exists(config.full("~/.tarstall/tarstall_execs/tarstall"))):
         return "Not installed"
     config.vprint('Removing source line from bashrc')
-    config.remove_line("~/.hamstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
+    config.remove_line("~/.tarstall/.bashrc", "~/{}".format(config.read_config("ShellFile")), "word")
     generic.progress(10)
     config.vprint("Removing .desktop files")
     for prog in config.db["programs"]:
@@ -770,61 +729,22 @@ def erase():
                 except FileNotFoundError:
                     pass
     generic.progress(40)
-    config.vprint('Removing hamstall directory')
-    rmtree(config.full('~/.hamstall'))
+    config.vprint('Removing tarstall directory')
+    rmtree(config.full('~/.tarstall'))
     generic.progress(90)
     try:
-        rmtree("/tmp/hamstall-temp")
+        rmtree("/tmp/tarstall-temp")
     except FileNotFoundError:
         pass
-    print("Hamstall has been removed from your system.")
+    print("tarstall has been removed from your system.")
     print('Please restart your terminal.')
     config.unlock()
     return "Erased"
 
 
 def first_time_setup():
-    """First Time Setup.
-
-    Sets up hamstall for the first time.
-
-    Returns:
-        str: "Already installed" if already installed, "Success" on installation success.
-
-    """
-    if config.exists(config.full('~/.hamstall/hamstall_execs/hamstall')):
-        return "Already installed"
-    print('Installing hamstall to your system...')
-    try:
-        os.mkdir(config.full("~/.hamstall"))
-    except FileExistsError:
-        rmtree(config.full("~/.hamstall"))
-        os.mkdir(config.full("~/.hamstall"))
-    try:
-        os.mkdir(config.full("/tmp/hamstall-temp/"))
-    except FileExistsError:
-        rmtree(config.full("/tmp/hamstall-temp"))
-        os.mkdir(config.full("/tmp/hamstall-temp/"))
-    os.mkdir(config.full("~/.hamstall/bin"))
-    config.create("~/.hamstall/database")
-    create_db()
-    config.create("~/.hamstall/.bashrc")  # Create directories and files
-    files = os.listdir()
-    for i in files:
-        i_num = len(i) - 3
-        if i[i_num:len(i)] == '.py':
-            try:
-                copyfile(i, config.full('~/.hamstall/' + i))
-            except FileNotFoundError:
-                return "Bad copy"
-    config.add_line("source ~/.hamstall/.bashrc\n", "~/{}".format(config.read_config("ShellFile")))
-    os.mkdir(config.full("~/.hamstall/hamstall_execs"))
-    move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))  # Move hamstall.py to execs dir
-    config.add_line("export PATH=$PATH:{}".format(
-                config.full("~/.hamstall/hamstall_execs")), "~/.hamstall/.bashrc")  # Add bashrc line
-    os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
-    config.unlock()
-    return "Success"
+    generic.pprint("Not supported in the transition version!")
+    sys.exit(1)
 
 
 def verbose_toggle():
@@ -869,21 +789,21 @@ def create_command(file_extension, program):
         elif file_extension == '.rar':
             vflag = '-idcdpq '
     if file_extension == '.tar.gz' or file_extension == '.tar.xz':
-        command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/hamstall-temp/"
+        command_to_go = "tar " + vflag + "xf " + program + " -C /tmp/tarstall-temp/"
         if which("tar") is None:
             print("tar not installed; please install it to install .tar.gz and .tar.xz files!")
             return "No tar"
     elif file_extension == '.zip':
-        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/hamstall-temp/'
+        command_to_go = 'unzip ' + vflag + ' ' + program + ' -d /tmp/tarstall-temp/'
         if which("unzip") is None:
             print("unzip not installed; please install it to install ZIP files!")
             return "No unzip"
     elif file_extension == '.7z':
-        command_to_go = '7z x ' + vflag + program + ' -o/tmp/hamstall-temp/'
+        command_to_go = '7z x ' + vflag + program + ' -o/tmp/tarstall-temp/'
         if which("7z") is None:
             return "No 7z"
     elif file_extension == '.rar':
-        command_to_go = 'unrar x ' + vflag + program + ' /tmp/hamstall-temp/'
+        command_to_go = 'unrar x ' + vflag + program + ' /tmp/tarstall-temp/'
         if which("unrar") is None:
             return "No unrar"
     else:
@@ -913,12 +833,12 @@ def install(program, overwrite=False, reinstall=False):
         return "Bad name"
     config.vprint("Removing old temp directory (if it exists!)")
     try:
-        rmtree(config.full("/tmp/hamstall-temp"))  # Removes temp directory (used during installs)
+        rmtree(config.full("/tmp/tarstall-temp"))  # Removes temp directory (used during installs)
     except FileNotFoundError:
         pass
     generic.progress(10)
     config.vprint("Creating new temp directory")
-    os.mkdir(config.full("/tmp/hamstall-temp"))  # Creates temp directory for extracting archive
+    os.mkdir(config.full("/tmp/tarstall-temp"))  # Creates temp directory for extracting archive
     config.vprint("Extracting archive to temp directory")
     file_extension = config.extension(program)
     program = config.spaceify(program)
@@ -934,14 +854,14 @@ def install(program, overwrite=False, reinstall=False):
         return "Error"
     generic.progress(50)
     config.vprint('Checking for folder in folder')
-    if os.path.isdir(config.full('/tmp/hamstall-temp/' + program_internal_name + '/')):
+    if os.path.isdir(config.full('/tmp/tarstall-temp/' + program_internal_name + '/')):
         config.vprint('Folder in folder detected! Using that directory instead...')
-        source = config.full('/tmp/hamstall-temp/' + program_internal_name) + '/'
-        dest = config.full('~/.hamstall/bin/')
+        source = config.full('/tmp/tarstall-temp/' + program_internal_name) + '/'
+        dest = config.full('~/.tarstall/bin/')
     else:
         config.vprint('Folder in folder not detected!')
-        source = config.full('/tmp/hamstall-temp') + '/'
-        dest = config.full('~/.hamstall/bin/' + program_internal_name + "/")
+        source = config.full('/tmp/tarstall-temp') + '/'
+        dest = config.full('~/.tarstall/bin/' + program_internal_name + "/")
     config.vprint("Moving program to directory")
     if overwrite:
         if verbose:
@@ -952,10 +872,10 @@ def install(program, overwrite=False, reinstall=False):
     else:
         move(source, dest)
     generic.progress(80)
-    config.vprint("Adding program to hamstall list of programs")
+    config.vprint("Adding program to tarstall list of programs")
     config.vprint('Removing old temp directory...')
     try:
-        rmtree(config.full("/tmp/hamstall-temp"))
+        rmtree(config.full("/tmp/tarstall-temp"))
     except FileNotFoundError:
         config.vprint('Temp folder not found so not deleted!')
     if not reinstall:
@@ -981,12 +901,12 @@ def dirinstall(program_path, program_internal_name, overwrite=False, reinstall=F
     generic.progress(10)
     if not config.check_bin("rsync") and overwrite:
         return "No rsync"
-    config.vprint("Moving folder to hamstall destination")
+    config.vprint("Moving folder to tarstall destination")
     if overwrite:
-        call(["rsync", "-a", program_path, config.full("~/.hamstall/bin/{}".format(program_internal_name))])
+        call(["rsync", "-a", program_path, config.full("~/.tarstall/bin/{}".format(program_internal_name))])
         rmtree(program_path)
     else:
-        move(program_path, config.full("~/.hamstall/bin/"))
+        move(program_path, config.full("~/.tarstall/bin/"))
     if not reinstall:
         return finish_install(program_internal_name)
     else:
@@ -1006,10 +926,10 @@ def uninstall(program):
     if not program in config.db["programs"]:
         return "Not installed"
     config.vprint("Removing program files")
-    rmtree(config.full("~/.hamstall/bin/" + program + '/'))
+    rmtree(config.full("~/.tarstall/bin/" + program + '/'))
     generic.progress(20)
     config.vprint("Removing program from PATH and any binlinks for the program")
-    config.remove_line(program, "~/.hamstall/.bashrc", 'poundword')
+    config.remove_line(program, "~/.tarstall/.bashrc", 'poundword')
     generic.progress(30)
     config.vprint("Removing program desktop files")
     if config.db["programs"][program]["desktops"]:
@@ -1019,7 +939,7 @@ def uninstall(program):
             except FileNotFoundError:
                 pass
     generic.progress(80)
-    config.vprint("Removing program from hamstall list of programs")
+    config.vprint("Removing program from tarstall list of programs")
     del config.db["programs"][program]
     config.write_db()
     generic.progress(90)
@@ -1037,7 +957,7 @@ def list_programs():
 
 
 def get_online_version(type_of_replacement, branch=config.branch):
-    """Get hamstall Version from GitHub.
+    """Get tarstall Version from GitHub.
 
     Args:
         type_of_replacement (str): Type of version to get (file or prog)
@@ -1049,7 +969,7 @@ def get_online_version(type_of_replacement, branch=config.branch):
     if not can_update:
         print("requests library not installed! Exiting...")
         return -1
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
+    version_url = "https://raw.githubusercontent.com/hammy3502/tarstall/{}/version".format(branch)
     try:
         version_raw = requests.get(version_url)
     except requests.ConnectionError:
@@ -1065,7 +985,7 @@ def get_online_version(type_of_replacement, branch=config.branch):
 def get_file_version(version_type):
     """Get Database Versions.
 
-    Gets specified version of hamstall as stored in the database
+    Gets specified version of tarstall as stored in the database
 
     Args:
         version_type (str): Type of version to look up (file/prog)
@@ -1078,28 +998,6 @@ def get_file_version(version_type):
         return config.db["version"]["file_version"]
     elif version_type == 'prog':
         return config.db["version"]["prog_internal_version"]
-
-
-def download_files(files, folder):
-    """Download List of Files.
-    
-    Args:
-        files (str[]): List of files to obtain from hamstall repo
-        folder (str): Folder to put files in
-
-    Returns:
-        str: "Fail" if requests library isn't installed or "No internet"
-
-    """
-    if not can_update:
-        print("Cannot download files if the request library isn't installed!")
-        return "Fail"
-    for i in files:
-        try:
-            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/")
-        except requests.ConnectionError:
-            return "No internet"
-        open(config.full(folder + i), 'wb').write(r.content)
 
 
 verbose = config.vcheck()

@@ -710,7 +710,18 @@ def update():
     config.vprint('Version on GitHub: ' + str(final_version))
     generic.progress(10)
     if final_version > prog_version_internal:
-        print("An update has been found! Installing...")
+        tarstall_message = """
+hamstall has a new name, tarstall!
+
+While just a new name, it's technically a completely different program (same codebase, but still), and requires
+being updated to. Once updated, everything setup by hamstall will continue to function as normal, but anything
+added manually by a user/administrator to hamstall programs (startup services, etc.) may break!
+
+Generally speaking, you should be safe to update! Would you like to update?"""
+        you_sure = generic.get_input(tarstall_message, ['y', 'n'], 'y', ["Yes", "No"])
+        if you_sure != 'y':
+            generic.pprint("Not updating to tarstall!")
+            return
         config.vprint('Removing old hamstall pys...')
         os.chdir(config.full("~/.hamstall"))
         files = os.listdir()
@@ -1085,8 +1096,7 @@ def download_files(files, folder):
         return "Fail"
     for i in files:
         try:
-            r = requests.get(
-            "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(config.db["version"]["branch"]) + i)
+            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/")
         except requests.ConnectionError:
             return "No internet"
         open(config.full(folder + i), 'wb').write(r.content)

@@ -1049,7 +1049,7 @@ def get_online_version(type_of_replacement, branch=config.branch):
     if not can_update:
         print("requests library not installed! Exiting...")
         return -1
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
+    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/version"
     try:
         version_raw = requests.get(version_url)
     except requests.ConnectionError:

@@ -283,7 +283,7 @@ def tarstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     while config.get_version('file_version') > file_version:  # Lingering upgrades check
         if file_version == 10:  # Older upgrades can only take place in hamstall, not tarstall. 
             config.vprint("And such began the conversion from hamstall to tarstall.")
-            print ("\n\nUPGRADING FROM HAMSTALL TO TARSTALL, DO NOT EXIT!\n\n")
+            print ("\n\nUPGRADING FROM HAMSTALL TO TARSTALL, DO NOT EXIT!\n")
             if config.exists("~/.tarstall"):
                 generic.pprint("Please delete the folder in your home directory named '.tarstall'!")
                 config.unlock()
@@ -303,7 +303,10 @@ def tarstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
                     for d in config.db["programs"][p]["desktops"]:
                         config.replace_in_file("/.hamstall/bin", "/.tarstall/bin", "~/.local/share/applications/{}.desktop".format(d))
                 config.db["version"]["file_version"] = 11
-        print("Upgrade complete! You're in the clear, just upgrade tarstall at your earliest convenience!")
+        print("Upgrade complete! Attempting to update tarstall to get out of this transition!")
+        status = update()
+        if status == "No git":
+            generic.pprint("Please install git, then upgrade at your earliest convenience!")
         file_version = get_file_version('file')
         config.write_db()
 

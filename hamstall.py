@@ -243,9 +243,12 @@ e - Exit hamstall""".format(
         elif option == 'm':
             if config.read_config("Mode") == "cli":
                 config.change_config("Mode", "change", "gui")
+                prog_manage.create_desktop(None, "hamstall", "~/.hamstall/hamstall_execs/hamstall", 
+                "Run hamstall's GUI", "False", ["Utility"], "", "~/.hamstall/hamstall_execs/")
                 generic.pprint("Changed to GUI mode! Please restart hamstall.")
             else:
                 config.change_config("Mode", "change", "cli")
+                os.remove(config.full("~/.local/share/applications/hamstall.desktop"))
                 generic.pprint("Changed to CLI mode! Please restart hamstall.")
             key = None
         elif option == 's':

@@ -278,7 +278,7 @@ def hamstall_startup(start_fts=False, del_lock=False, old_upgrade=False):
     if start_fts:  # Check if -f or --first is supplied
         return first_time_setup()
 
-    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')):  # Make sure hamstall is installed
+    if not(config.exists('~/.hamstall/hamstall_execs/hamstall')) and not(config.exists("~/.hamstall/hamstall.py")):  # Make sure hamstall is installed
         return "Not installed"
 
     try:  # Lingering upgrades check
@@ -559,27 +559,34 @@ def finish_install(program_internal_name, is_git=False):
     return "Installed"
 
 
-def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon=""):
+def create_desktop(program_internal_name, name, program_file, comment="", should_terminal="", cats=[], icon="", path=""):
     """Create Desktop.
 
     Create a desktop file for a program installed through hamstall.
 
     Args:
-         program_internal_name (str): Name of program
-         name (str): The name as will be used in the .desktop file
-         program_file (str): The file in the program directory to point the .desktop to
-         comment (str): The comment as to be displayed in the .desktop file
-         should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
-         cats (str[]): List of categories to put in .desktop file
-         icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        program_internal_name (str/None): Name of program or None if not a hamstall program.
+        name (str): The name as will be used in the .desktop file
+        program_file (str): The file in the program directory to point the .desktop to, or the path to it if program_internal_name is None
+        comment (str): The comment as to be displayed in the .desktop file
+        should_terminal (str): "True" or "False" as to whether or not a terminal should be shown on program run
+        cats (str[]): List of categories to put in .desktop file
+        icon (str): The path to a valid icon or a specified icon as would be put in a .desktop file
+        path (str): The path to where the .desktop should be run. Only used when program_internal_name is None.
 
     Returns:
         str: "Already exists" if the .desktop file already exists or "Created" if the desktop file was
         successfully created.
+
     """
-    exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
-    path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
-    desktop_name = "{}-{}".format(program_file, program_internal_name)
+    if program_internal_name is not None:
+        exec_path = config.full("~/.hamstall/bin/{}/{}".format(program_internal_name, program_file))
+        path = config.full("~/.hamstall/bin/{}/".format(program_internal_name))
+        desktop_name = "{}-{}".format(program_file, program_internal_name)
+    else:
+        exec_path = config.full(program_file)
+        desktop_name = name
+        path = config.full(path)
     if config.exists("~/.local/share/applications/{}.desktop".format(desktop_name)):
         print("Desktop file already exists!")
         return "Already exists"
@@ -609,8 +616,9 @@ Categories={categories}
     config.create("./{}.desktop".format(desktop_name))
     with open(config.full("./{}.desktop".format(desktop_name)), 'w') as f:
         f.write(to_write)
-    config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
-    config.write_db()
+    if program_internal_name is not None:
+        config.db["programs"][program_internal_name]["desktops"].append(desktop_name)
+        config.write_db()
     return "Created"
 
 
@@ -702,7 +710,20 @@ def update():
     config.vprint('Version on GitHub: ' + str(final_version))
     generic.progress(10)
     if final_version > prog_version_internal:
-        print("An update has been found! Installing...")
+        tarstall_message = """
+hamstall has a new name, tarstall!
+
+While just a new name, it's technically a completely different program
+(same codebase, but still), and requires being updated to. Once updated, 
+everything setup by hamstall will continue to function as normal, 
+but anything added manually by a user/administrator to hamstall 
+programs (startup services, etc.) may break!
+
+Generally speaking, you should be safe to update! Would you like to update?"""
+        you_sure = generic.get_input(tarstall_message, ['y', 'n'], 'y', ["Yes", "No"])
+        if you_sure != 'y':
+            generic.pprint("Not updating to tarstall!")
+            return
         config.vprint('Removing old hamstall pys...')
         os.chdir(config.full("~/.hamstall"))
         files = os.listdir()
@@ -718,6 +739,9 @@ def update():
         elif status == "No internet":
             return "No internet"
         generic.progress(75)
+        move(config.full("~/.hamstall/hamstall.py"), config.full("~/.hamstall/hamstall_execs/hamstall"))
+        os.system('sh -c "chmod +x ~/.hamstall/hamstall_execs/hamstall"')
+        generic.progress(85)
         config.db["version"]["prog_internal_version"] = final_version
         config.write_db()
         return "Updated"
@@ -1027,7 +1051,7 @@ def get_online_version(type_of_replacement, branch=config.branch):
     if not can_update:
         print("requests library not installed! Exiting...")
         return -1
-    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/{}/version".format(branch)
+    version_url = "https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/version"
     try:
         version_raw = requests.get(version_url)
     except requests.ConnectionError:
@@ -1074,8 +1098,7 @@ def download_files(files, folder):
         return "Fail"
     for i in files:
         try:
-            r = requests.get(
-            "https://raw.githubusercontent.com/hammy3502/hamstall/{}/".format(config.db["version"]["branch"]) + i)
+            r = requests.get("https://raw.githubusercontent.com/hammy3502/hamstall/tarstall-transition/{}".format(i))
         except requests.ConnectionError:
             return "No internet"
         open(config.full(folder + i), 'wb').write(r.content)

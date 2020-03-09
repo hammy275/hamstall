@@ -1,3 +1,7 @@
+## WARNING
+
+This repository is archived. Check out [tarstall](https://github.com/hammy3502/tarstall), for the latest version of hamstall!
+
 # hamstall
 
 ![hamstall Terminal Interface](readme-images/terminal.png)
